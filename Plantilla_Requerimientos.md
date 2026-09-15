@@ -7,7 +7,7 @@
 
 ## 1. Identidad del Equipo
 
-- **Nombre del equipo:** GAES-5 (Fondo Emprender SENA)
+- **Nombre del equipo:** GAES-1 (Fondo Emprender SENA)
 - **Nombre del proyecto:** Sistema de Gestión de Eventos y Ruedas de Negocios (SENA - Fondo Emprender)
 - **Integrantes y roles:**
 
@@ -142,3 +142,52 @@ CREATE TABLE inscripciones_asistencia (
     FOREIGN KEY (evento_id) REFERENCES eventos(id),
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
+## 5. Requerimientos de Despliegue y Arquitectura CI/CD
+
+- **Frontend se desplegará en:** Vercel (Hosting para el cliente web SPA).
+- **Backend se desplegará en:** Render (Servicio en la nube para la API REST en Node.js/Express).
+- **Base de datos se desplegará en:** Railway (Instancia gestionada de MySQL).
+- **Dominio:** Subdominio gratuito de Vercel (`https://sistema-eventos-fondoemprender.vercel.app`).
+- **CI/CD:** ✅ Sí. Pipeline automatizado con **GitHub Actions** configurado por Andres Villamizar (DevOps). Ejecuta pruebas unitarias, validación de estilo/linter y despliegue automático ante cada *merge* o *push* en la rama `main`.
+- **Link del repositorio oficial:** ` https://github.com/Andresin23/GAES-1-Gestion-de-eventos.git` *(Pendiente crear)*.
+
+### Costos Estimados de Servidores (Proyección Mensual para Entorno Real)
+
+| Recurso | Proveedor / Plan | Costo Estimado (USD/mes) |
+| :--- | :--- | :--- |
+| **Hosting Backend** | Render Starter Plan (Instancia Express de alta disponibilidad) | $7.00 USD |
+| **Base de Datos Relacional** | Railway Managed MySQL (5 GB Almacenamiento + IOPS) | $10.00 USD |
+| **Hosting Frontend** | Vercel Free / Hobby Plan (Despliegue estático y CDN) | $0.00 USD |
+| **Servicio de Correos** | SendGrid / AWS SES (API de correos transaccionales) | $0.00 USD (Capa gratuita) |
+| **Dominio Personalizado** | Registro anual de dominio institucional `.com` / `.co` | $1.00 USD ($12/año) |
+| **TOTAL ESTIMADO** | | **~$18.00 USD / mes** |
+
+---
+
+## 6. Plan de Trabajo e Hitos del Hackathon (Cronograma Detallado)
+
+| Clases / Semanas | Qué esperamos terminar (Objetivos y Entregables) | Responsable Principal |
+| :--- | :--- | :--- |
+| **Clase 06 (Actual)** | **Inscripción del proyecto:** Definición de requerimientos, asignación de roles del GAES-5 y estructuración del repositorio en GitHub. | Angel Rueda (PM) / Todo el equipo |
+| **Clases 07–08 (Backend)** | **Servidor y API Base:** Configuración del servidor Node.js/Express, arquitectura de rutas, modelos de datos en MySQL y endpoints de autenticación RBAC con JWT. | Ahsly Manosalva (Backend) |
+| **Clases 09–10 (Datos)** | **Persistencia y Lógica:** Base de datos relacional operativa. Endpoints para gestión de eventos, flujo de aprobación del Comité Directivo y generación de agenda de citas. | Ahsly Manosalva (Backend) |
+| **Clases 11–13 (Feature / Auth / Realtime)** | **Front + Socket.IO + QR:** Maquetación UI de la Rueda de Negocios, integración del mapa/calendario público, lector de QR con la cámara y actualización de aforo en tiempo real. | Miguel Lopez (Frontend) / Andres Villamizar (DevOps) |
+| **Clases 14–15 (Integración)** | **Integración Total & CI/CD:** Conexión completa Frontend-Backend, despliegue continuo en Vercel/Render y generación de reportes en PDF/XLSX. | Todo el equipo (Liderado por Andres y Angel) |
+| **Clase 16 (Demo Day)** | **Entrega Final:** Sistema 100% operativo, pruebas de estrés realizadas y presentación/demo en vivo ante el instructor y clientes. | Angel Rueda (PM) / Todo el equipo |
+
+---
+
+## 7. Riesgos y Preguntas de Validación para el Cliente
+
+### Riesgos Identificados
+- **Riesgo 1 (Sincronización de Citas en Tiempo Real):** Colisión de horarios durante la Rueda de Negocios si dos Compradores solicitan cita al mismo Proveedor de forma simultánea.
+  * *Mitigación:* Implementar bloqueos optimistas en la base de datos MySQL y validación de disponibilidad inmediata en backend.
+- **Riesgo 2 (Fallas de Conectividad en Sitio):** Pérdida de acceso a Internet por parte del Operador Logístico al escanear entradas QR en eventos de alta concurrencia.
+  * *Mitigación:* Diseñar un caché local temporal en la vista del Operador que sincronice las asistencias en lote al recuperar conexión.
+- **Riesgo 3 (Generación de Reportes Pesados):** Sobrecarga del servidor al exportar archivos PDF o XLSX con miles de registros de asistentes e indicadores del evento.
+  * *Mitigación:* Procesar la exportación de reportes complejos en segundo plano utilizando trabajos asíncronos.
+
+### Preguntas para el Instructor / Cliente (Lideradas por Angel Rueda - PM)
+1. **Flujo del Comité Directivo:** ¿El visto bueno del Comité Directivo para aprobar un evento requiere firma digital formal o únicamente la actualización de estado en plataforma con log de auditoría?
+2. **Asignación de Ubicación:** En las Ruedas de Negocios presenciales, ¿la asignación del número de mesa/stand debe ser automática e incremental o se debe permitir la reasignación manual por parte del Administrador?
+3. **Mecanismo de Autenticación:** ¿Es estrictamente obligatorio el uso de JWT (JSON Web Tokens) o el cliente acepta manejo de sesiones mediante Express-Session con cookies seguras?
