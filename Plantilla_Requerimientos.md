@@ -14,9 +14,9 @@
 | Integrante | Rol | Responsable de |
 | :--- | :--- | :--- |
 | **Andres Villamizar** | ⚙️ **DevOps** | Repositorio GitHub, Git, CI/CD, contenerización (Docker) y entorno de despliegue |
-| **Miguel Lopez** | 🎨 **Backend** | Interfaz de usuario (UI/UX), prototipado responsive, librerías visuales, consumo de API |
-| **Ahsly Manosalva** | 🔧 **Frontend** | Servidor, API REST/GraphQL, arquitectura de base de datos, lógica de negocio y seguridad |
-| **Angel Rueda** | 🧭 **Project Manager (PM)** | Gestión del proyecto, canal con el cliente/instructor, QA, entregables y desbloqueo del equipo |
+| **Miguel Lopez** | 🎨 **Frontend** | Interfaz de usuario (UI/UX), prototipado responsive, librerías visuales, consumo de API |
+| **Ahsly Manosalva** | 🔧 **Project Manager (PM)** | Servidor, API REST/GraphQL, arquitectura de base de datos, lógica de negocio y seguridad |
+| **Angel Rueda** | 🧭 **Frontend** | Gestión del proyecto, canal con el cliente/instructor, QA, entregables y desbloqueo del equipo |
 
 ---
 
