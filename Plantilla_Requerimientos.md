@@ -49,16 +49,16 @@
 
 | Funcionalidad / Módulo | ¿MVP? | ¿Extra? | Responsable |
 | :--- | :---: | :---: | :--- |
-| **Autenticación y Registro de Usuarios por Roles (RBAC)** | ✅ | | Backend (Ahsly) |
+| **Autenticación y Registro de Usuarios por Roles (RBAC)** | ✅ | | Backend (Angel) |
 | **Flujo de Propuesta, Revisión y Aprobación de Eventos** | ✅ | | Backend + PM (Ahsly / Angel) |
 | **Calendario Público de Eventos y Pre-eventos** | ✅ | | Frontend (Miguel) |
-| **Módulo de Ruedas de Negocios y Matchmaking (Agendamiento de Citas)** | ✅ | | Frontend + Backend (Miguel / Ahsly) |
-| **Control de Aforo y Generación de Entradas con Código QR** | ✅ | | Frontend + Backend (Miguel / Ahsly) |
+| **Módulo de Ruedas de Negocios y Matchmaking (Agendamiento de Citas)** | ✅ | | Frontend + Backend (Miguel / Angel) |
+| **Control de Aforo y Generación de Entradas con Código QR** | ✅ | | Frontend + Backend (Miguel / Angel) |
 | **Vista Logística para Escaneo de QR y Control de Registro en Sitio** | ✅ | | Frontend + DevOps (Miguel / Andres) |
-| **Reportes y Exportación de Datos (Excel XLSX / PDF)** | ✅ | | Backend + Frontend (Ahsly / Miguel) |
-| **Emisión Automática de Certificados Digitales de Asistencia en PDF** | | ✅ | Backend (Ahsly) |
-| **Notificaciones Masivas vía WhatsApp / SMS / Correo Transaccional** | | ✅ | DevOps + Backend (Andres / Ahsly) |
-| **Integración con Videollamadas (Teams / Meet) para Eventos Virtuales** | | ✅ | Backend + DevOps (Ahsly / Andres) |
+| **Reportes y Exportación de Datos (Excel XLSX / PDF)** | ✅ | | Backend + Frontend (Angel / Miguel) |
+| **Emisión Automática de Certificados Digitales de Asistencia en PDF** | | ✅ | Backend (Angel) |
+| **Notificaciones Masivas vía WhatsApp / SMS / Correo Transaccional** | | ✅ | DevOps + Backend (Andres / Angel) |
+| **Integración con Videollamadas (Teams / Meet) para Eventos Virtuales** | | ✅ | Backend + DevOps (Angel / Andres) |
 
 **Feature clave:** Módulo interactivo de Rueda de Negocios (Matchmaking) entre Compradores y Proveedores con agendamiento automatizado de citas y generación de códigos QR para acreditación de aforo.
 
@@ -187,7 +187,7 @@ CREATE TABLE inscripciones_asistencia (
 - **Riesgo 3 (Generación de Reportes Pesados):** Sobrecarga del servidor al exportar archivos PDF o XLSX con miles de registros de asistentes e indicadores del evento.
   * *Mitigación:* Procesar la exportación de reportes complejos en segundo plano utilizando trabajos asíncronos.
 
-### Preguntas para el Instructor / Cliente (Lideradas por Angel Rueda - PM)
+### Preguntas para el Instructor / Cliente (Lideradas por Ahsly Valentina - PM)
 1. **Flujo del Comité Directivo:** ¿El visto bueno del Comité Directivo para aprobar un evento requiere firma digital formal o únicamente la actualización de estado en plataforma con log de auditoría?
 2. **Asignación de Ubicación:** En las Ruedas de Negocios presenciales, ¿la asignación del número de mesa/stand debe ser automática e incremental o se debe permitir la reasignación manual por parte del Administrador?
 3. **Mecanismo de Autenticación:** ¿Es estrictamente obligatorio el uso de JWT (JSON Web Tokens) o el cliente acepta manejo de sesiones mediante Express-Session con cookies seguras?
