@@ -10,8 +10,6 @@ Plataforma web integral diseñada para la planificación, aprobación, gestión 
 - [Arquitectura y CI/CD](#-arquitectura-y-cicd)
 - [Instalación y Configuración](#-instalación-y-configuración)
 - [Uso](#-uso)
-- [Contribución](#-contribución)
-
 ---
 
 ## 💡 Descripción General
@@ -62,12 +60,3 @@ Una vez iniciada la aplicación localmente, accede a `http://localhost:3000` des
    - El sistema genera y envía automáticamente los certificados de asistencia al finalizar cada evento.
 
 ---
-
-## 🤝 Contribución
-
-¡Las contribuciones son bienvenidas para seguir fortaleciendo el proyecto! Si deseas colaborar, sigue estos pasos:
-
-1. **Haz un Fork** del repositorio.
-2. **Crea una nueva rama** para tu funcionalidad o corrección:
-   ```bash
-   git checkout -b feature/nueva-funcionalidad
