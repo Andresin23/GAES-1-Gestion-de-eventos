@@ -88,8 +88,7 @@ function renderizarEventos() {
   if (eventosFiltrados.length === 0) {
     contenedor.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--superficie); border-radius: var(--radio-lg); border: 1px dashed var(--borde);">
-        <span style="font-size: 40px; display: block; margin-bottom: 12px;">🔍</span>
-        <h3 style="color: var(--sena-navy); font-size: 18px; font-weight: 700;">No se encontraron eventos coincidentes</h3>
+        <h3 style="color: var(--sena-navy); font-size: 17px; font-weight: 700;">No se encontraron eventos coincidentes</h3>
         <p style="color: var(--texto-secundario); font-size: 14px; margin-top: 6px;">Intenta ajustar tus filtros de búsqueda o seleccionar otra categoría.</p>
         <button onclick="limpiarFiltros()" class="btn btn-secundario btn-sm" style="margin-top: 16px;">Limpiar Filtros</button>
       </div>
@@ -120,11 +119,11 @@ function renderizarEventos() {
           
           <div class="tarjeta-metadatos">
             <div class="meta-item">
-              <span class="meta-icono">📅</span>
+              <span style="font-weight:700; color: var(--sena-verde);">Fecha:</span>
               <span>${ev.fecha} · ${ev.hora}</span>
             </div>
             <div class="meta-item">
-              <span class="meta-icono">📍</span>
+              <span style="font-weight:700; color: var(--sena-verde);">Lugar:</span>
               <span><strong>${ev.modalidad}:</strong> ${ev.lugar}</span>
             </div>
           </div>
@@ -223,13 +222,13 @@ function abrirModalDetalle(eventoId) {
 
   cuerpo.innerHTML = `
     <span class="badge badge-presencial" style="margin-bottom: 12px;">${evento.categoria}</span>
-    <h2 style="font-size: 22px; color: var(--sena-navy); font-weight: 800; margin-bottom: 12px;">${evento.titulo}</h2>
-    <p style="color: var(--texto-secundario); line-height: 1.6; margin-bottom: 20px;">${evento.descripcion}</p>
+    <h2 style="font-size: 20px; color: var(--sena-navy); font-weight: 800; margin-bottom: 12px;">${evento.titulo}</h2>
+    <p style="color: var(--texto-secundario); line-height: 1.6; margin-bottom: 20px; font-size: 14px;">${evento.descripcion}</p>
 
-    <div style="background: var(--fondo); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; margin-bottom: 20px; display: grid; gap: 10px;">
-      <div><strong>📅 Fecha y Hora:</strong> ${evento.fecha} (${evento.hora})</div>
-      <div><strong>📍 Ubicación/Modalidad:</strong> ${evento.modalidad} - ${evento.lugar}</div>
-      <div><strong>👥 Aforo Permitido:</strong> ${evento.aforoMaximo} personas (${evento.aforoMaximo - evento.aforoActual} cupos libres)</div>
+    <div style="background: var(--fondo); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; margin-bottom: 20px; display: grid; gap: 10px; font-size: 13.5px;">
+      <div><strong>Fecha y Hora:</strong> ${evento.fecha} (${evento.hora})</div>
+      <div><strong>Ubicación/Modalidad:</strong> ${evento.modalidad} - ${evento.lugar}</div>
+      <div><strong>Aforo Permitido:</strong> ${evento.aforoMaximo} personas (${evento.aforoMaximo - evento.aforoActual} cupos libres)</div>
     </div>
 
     <div style="display: flex; gap: 12px; justify-content: flex-end;">
@@ -260,6 +259,24 @@ function abrirModalInscripcion(eventoId) {
   if (tituloModal) tituloModal.textContent = `Registro: ${evento.titulo}`;
   document.getElementById('input-evento-id').value = evento.id;
   
+  // Auto-completar datos si el usuario tiene sesión activa
+  const sesion = obtenerSesion();
+  if (sesion && sesion.usuario) {
+    const u = sesion.usuario;
+    if (document.getElementById('reg-nombre')) document.getElementById('reg-nombre').value = u.nombre || '';
+    if (document.getElementById('reg-documento')) document.getElementById('reg-documento').value = u.documento || '';
+    if (document.getElementById('reg-correo')) document.getElementById('reg-correo').value = u.email || '';
+    if (document.getElementById('reg-rol') && u.rol) {
+      const selectRol = document.getElementById('reg-rol');
+      for (let i = 0; i < selectRol.options.length; i++) {
+        if (selectRol.options[i].value === u.rol) {
+          selectRol.selectedIndex = i;
+          break;
+        }
+      }
+    }
+  }
+
   formInscripcion.style.display = 'block';
   contenedorPase.style.display = 'none';
 
@@ -288,7 +305,7 @@ async function procesarInscripcion(event) {
     });
 
     if (respuesta.ok && respuesta.ticket) {
-      mostrarToast('¡Inscripción exitosa! Tu Pase Digital QR ha sido generado.', 'exito');
+      mostrarToast('Inscripción exitosa. Tu Pase Digital QR ha sido generado.', 'exito');
       renderizarPaseDigital(respuesta.ticket);
       // Actualizar aforo en estado local
       const eventoLocal = estadoCalendario.eventos.find(e => e.id === Number(eventoId));
@@ -344,14 +361,14 @@ function dibujarCodigoQR(canvas, codigo) {
   // Semilla de cuadrícula basada en el hash del código
   const gridSize = 21;
   const cellSize = size / gridSize;
-  ctx.fillStyle = '#0f2d40';
+  ctx.fillStyle = '#0F172A';
 
   // Patrones de Esquinas (Finders)
   const dibujarFinder = (x, y) => {
     ctx.fillRect(x * cellSize, y * cellSize, 7 * cellSize, 7 * cellSize);
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect((x + 1) * cellSize, (y + 1) * cellSize, 5 * cellSize, 5 * cellSize);
-    ctx.fillStyle = '#0f2d40';
+    ctx.fillStyle = '#0F172A';
     ctx.fillRect((x + 2) * cellSize, (y + 2) * cellSize, 3 * cellSize, 3 * cellSize);
   };
 
@@ -379,11 +396,143 @@ function dibujarCodigoQR(canvas, codigo) {
   }
 
   // Marca central SENA
-  ctx.fillStyle = '#39A900';
+  ctx.fillStyle = '#00A859';
   ctx.fillRect(9 * cellSize, 9 * cellSize, 3 * cellSize, 3 * cellSize);
 }
 
 function cerrarModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.remove('activo');
+}
+
+// ============================================================================
+// FUNCIONES DE CONTROL DEL MODAL DE LOGIN Y REGISTRO DE USUARIOS CON ROLES
+// ============================================================================
+
+function abrirModalLogin() {
+  const modal = document.getElementById('modal-login');
+  if (modal) {
+    cambiarTabLogin('login');
+    modal.classList.add('activo');
+  }
+}
+
+function cambiarTabLogin(tab) {
+  const btnLogin = document.getElementById('tab-btn-login');
+  const btnRegistro = document.getElementById('tab-btn-registro');
+  const secLogin = document.getElementById('form-login-seccion');
+  const secRegistro = document.getElementById('form-registro-seccion');
+
+  if (tab === 'login') {
+    if (btnLogin) btnLogin.classList.add('activo');
+    if (btnRegistro) btnRegistro.classList.remove('activo');
+    if (secLogin) secLogin.style.display = 'block';
+    if (secRegistro) secRegistro.style.display = 'none';
+  } else {
+    if (btnRegistro) btnRegistro.classList.add('activo');
+    if (btnLogin) btnLogin.classList.remove('activo');
+    if (secRegistro) secRegistro.style.display = 'block';
+    if (secLogin) secLogin.style.display = 'none';
+  }
+}
+
+async function ejecutarLogin(event) {
+  if (event) event.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  try {
+    const respuesta = await peticionAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+
+    if (respuesta.ok && respuesta.datos) {
+      mostrarToast(`Bienvenido(a) ${respuesta.datos.usuario.nombre}. Rol: ${respuesta.datos.usuario.rol}`, 'exito');
+      cerrarModal('modal-login');
+      actualizarBarraUsuarioHeader();
+    }
+  } catch (err) {
+    mostrarToast(err.message || 'Error de inicio de sesión.', 'error');
+  }
+}
+
+function loginDemo(email, password) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-password').value = password;
+  ejecutarLogin(null);
+}
+
+async function ejecutarRegistroUsuario(event) {
+  if (event) event.preventDefault();
+  const nombre = document.getElementById('nuevo-nombre').value;
+  const documento = document.getElementById('nuevo-documento').value;
+  const email = document.getElementById('nuevo-email').value;
+  const password = document.getElementById('nuevo-password').value;
+  const rol = document.getElementById('nuevo-rol').value;
+
+  try {
+    const respuesta = await peticionAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ nombre, documento, email, password, rol })
+    });
+
+    if (respuesta.ok && respuesta.datos) {
+      mostrarToast(`Registro exitoso. Sesión iniciada como ${nombre} [${rol}].`, 'exito');
+      cerrarModal('modal-login');
+      actualizarBarraUsuarioHeader();
+    }
+  } catch (err) {
+    mostrarToast(err.message || 'Error al registrar el usuario.', 'error');
+  }
+}
+
+// ============================================================================
+// FUNCIONES DE CREACIÓN DE EVENTOS CON VALIDACIÓN RBAC
+// ============================================================================
+
+function abrirModalCrearEvento() {
+  const sesion = obtenerSesion();
+  if (!sesion || !sesion.usuario) {
+    mostrarToast('Debe iniciar sesión para crear eventos.', 'error');
+    setTimeout(() => { window.location.href = 'login.html'; }, 600);
+    return;
+  }
+
+  const u = sesion.usuario;
+  const esPermitido = u.rol === 'Administrador' || u.rol === 'Emprendedor SENA' || u.rol === 'Emprendedor';
+  if (!esPermitido) {
+    mostrarToast(`Acceso Restringido: Su rol (${u.rol}) no posee permisos para publicar eventos. Se requiere Administrador o Emprendedor SENA.`, 'error');
+    return;
+  }
+
+  const modal = document.getElementById('modal-crear-evento');
+  if (modal) modal.classList.add('activo');
+}
+
+async function procesarCreacionEvento(event) {
+  event.preventDefault();
+  const titulo = document.getElementById('crear-titulo').value;
+  const categoria = document.getElementById('crear-categoria').value;
+  const descripcion = document.getElementById('crear-descripcion').value;
+  const modalidad = document.getElementById('crear-modalidad').value;
+  const aforoMaximo = document.getElementById('crear-aforo').value;
+  const lugar = document.getElementById('crear-lugar').value;
+  const fecha = document.getElementById('crear-fecha').value;
+  const hora = document.getElementById('crear-hora').value;
+
+  try {
+    const respuesta = await peticionAPI('/eventos', {
+      method: 'POST',
+      body: JSON.stringify({ titulo, categoria, descripcion, modalidad, aforoMaximo, lugar, fecha, hora })
+    });
+
+    if (respuesta.ok && respuesta.evento) {
+      mostrarToast('Evento creado y publicado exitosamente en la plataforma.', 'exito');
+      cerrarModal('modal-crear-evento');
+      await cargarEventos(); // Recargar el calendario en tiempo real
+    }
+  } catch (err) {
+    mostrarToast(err.message || 'Error al crear el evento.', 'error');
+  }
 }

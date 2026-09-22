@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Aforo y Registro QR - Fondo Emprender SENA</title>
   <meta name="description" content="Módulo logístico de registro en puerta y control de aforo por QR en tiempo real para eventos SENA.">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
   <div class="layout">
@@ -23,13 +24,13 @@
 
         <nav class="nav-principal" role="navigation" aria-label="Navegación del operador">
           <a href="index.html" class="nav-link">
-            <span>👈</span> Volver al Calendario
+            Volver al Calendario
           </a>
-          <div class="chip-usuario" style="margin-left: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">
-            <div class="chip-avatar" style="background: var(--sena-verde); color: white;">OP</div>
+          <div class="chip-usuario" style="margin-left: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+            <div class="chip-avatar" style="background: var(--sena-verde); color: white; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center;">OP</div>
             <div style="font-size: 12px;">
               <div style="font-weight: 700;">Operador Logístico</div>
-              <div style="color: #cbd5e1; font-size: 11px;">Puerta Principal SENA</div>
+              <div style="color: #CBD5E1; font-size: 11px;">Puerta Principal SENA</div>
             </div>
           </div>
         </nav>
@@ -44,14 +45,14 @@
         <div class="aforo-hero-grid">
           <div>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span class="badge badge-disponible">📍 Punto de Control Activo</span>
-              <span style="font-size: 13px; color: #a3c2d4;">Sincronizado vía WebSockets</span>
+              <span class="badge badge-disponible">Punto de Control Activo</span>
+              <span style="font-size: 13px; color: #94A3B8;">Sincronizado vía WebSockets</span>
             </div>
             
-            <label for="select-evento-aforo" style="font-size: 13px; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">
+            <label for="select-evento-aforo" style="font-size: 13px; color: #CBD5E1; font-weight: 700; display: block; margin-bottom: 6px;">
               Seleccionar Evento en Control:
             </label>
-            <select id="select-evento-aforo" class="entrada-control" style="font-weight: 700; font-size: 16px; color: var(--sena-navy); max-width: 580px;">
+            <select id="select-evento-aforo" class="entrada-control" style="font-weight: 700; font-size: 15px; color: var(--sena-navy); max-width: 580px;">
               <!-- Opciones dinámicas de la API -->
             </select>
           </div>
@@ -59,7 +60,7 @@
           <!-- MEDIDOR DE AFORO GIGANTE -->
           <div class="medidor-aforo">
             <div id="aforo-porcentaje-texto" class="porcentaje-gigante">0%</div>
-            <div id="aforo-conteo-detalle" style="font-size: 13px; color: #cbd5e1; font-weight: 600;">0 de 0 en sala</div>
+            <div id="aforo-conteo-detalle" style="font-size: 13px; color: #CBD5E1; font-weight: 600;">0 de 0 en sala</div>
             
             <div class="aforo-barra-macro">
               <div id="aforo-barra-fill" class="aforo-barra-macro-fill"></div>
@@ -75,7 +76,7 @@
         <div class="scanner-box">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <h2 style="font-size: 18px; font-weight: 700; color: var(--sena-navy); display: flex; align-items: center; gap: 8px;">
-              <span>📷</span> Escáner de Código QR
+              Escáner de Código QR
             </h2>
             <span class="badge badge-presencial">Cámara HD / Móvil</span>
           </div>
@@ -84,9 +85,8 @@
           <div class="scanner-viewport-wrapper">
             <div class="scanner-laser"></div>
             <div class="scanner-target-frame"></div>
-            <div style="text-align: center; color: #94a3b8; padding: 20px;">
-              <span style="font-size: 44px; display: block; margin-bottom: 8px;">📱</span>
-              <p style="font-size: 13px;">Apunta la cámara al pase digital del asistente</p>
+            <div style="text-align: center; color: #94A3B8; padding: 20px;">
+              <p style="font-size: 13px; font-weight: 600;">Apunta la cámara al pase digital del asistente</p>
             </div>
           </div>
 
@@ -98,7 +98,7 @@
           <!-- BOTONES DE ACCIÓN RÁPIDA -->
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
             <button onclick="simularEscaneoQR()" class="btn btn-primario btn-bloque">
-              ⚡ Simular Escaneo Instantáneo (Lectura QR)
+              Simular Escaneo Instantáneo
             </button>
             <button onclick="simularEscaneoQR('FE-INVALIDO-000')" class="btn btn-secundario btn-sm">
               Probar Pase Inválido
@@ -111,7 +111,7 @@
           
           <!-- BÚSQUEDA MANUAL POR DOCUMENTO -->
           <div class="tarjeta">
-            <h3 class="titulo-seccion">🔍 Búsqueda Manual en Puerta</h3>
+            <h3 class="titulo-seccion">Búsqueda Manual en Puerta</h3>
             <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;">
               En caso de pantalla de celular dañada o documento físico, ingresa la cédula o código de pase:
             </p>
@@ -124,7 +124,7 @@
           <!-- TABLA LOG DE ACCESOS EN TIEMPO REAL -->
           <div class="tarjeta" style="flex: 1;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-              <h3 class="titulo-seccion" style="margin-bottom: 0;">📋 Log de Ingresos en Sitio</h3>
+              <h3 class="titulo-seccion" style="margin-bottom: 0;">Log de Ingresos en Sitio</h3>
               <span style="font-size: 12px; color: var(--texto-secundario);">Últimas lecturas</span>
             </div>
 
@@ -156,7 +156,7 @@
     </main>
 
     <!-- FOOTER INSTITUCIONAL -->
-    <footer style="background: var(--sena-navy); color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding: 24px; font-size: 13px; text-align: center;">
+    <footer style="background: var(--sena-navy); color: #94A3B8; border-top: 2px solid var(--sena-verde); padding: 24px; font-size: 13.3px; text-align: center;">
       <p>Sistema de Gestión de Eventos Fondo Emprender SENA · Módulo Operativo de Aforo GAES-1 © 2026</p>
     </footer>
 
