@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Aforo y Registro QR - Fondo Emprender SENA</title>
+  <meta name="description" content="Módulo logístico de registro en puerta y control de aforo por QR en tiempo real para eventos SENA.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="layout">
+    
+    <!-- ENCABEZADO LOGÍSTICO SENA -->
+    <header class="header-institucional" role="banner">
+      <div class="header-contenedor">
+        <div class="brand-sena">
+          <div class="logo-sena-badge" aria-hidden="true">SENA</div>
+          <div class="brand-info">
+            <span class="brand-titulo">PANEL LOGÍSTICO EN PUERTA</span>
+            <span class="brand-subtitulo">Control de Aforo & Registro QR (GAES-1)</span>
+          </div>
+        </div>
+
+        <nav class="nav-principal" role="navigation" aria-label="Navegación del operador">
+          <a href="index.html" class="nav-link">
+            <span>👈</span> Volver al Calendario
+          </a>
+          <div class="chip-usuario" style="margin-left: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">
+            <div class="chip-avatar" style="background: var(--sena-verde); color: white;">OP</div>
+            <div style="font-size: 12px;">
+              <div style="font-weight: 700;">Operador Logístico</div>
+              <div style="color: #cbd5e1; font-size: 11px;">Puerta Principal SENA</div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL DEL CONTROL DE AFORO -->
+    <main class="contenido-principal" role="main">
+      
+      <!-- HERO PANEL CON MEDIDOR DE AFORO EN TIEMPO REAL -->
+      <section class="aforo-hero-panel" aria-label="Indicadores de aforo en tiempo real">
+        <div class="aforo-hero-grid">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span class="badge badge-disponible">📍 Punto de Control Activo</span>
+              <span style="font-size: 13px; color: #a3c2d4;">Sincronizado vía WebSockets</span>
+            </div>
+            
+            <label for="select-evento-aforo" style="font-size: 13px; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 6px;">
+              Seleccionar Evento en Control:
+            </label>
+            <select id="select-evento-aforo" class="entrada-control" style="font-weight: 700; font-size: 16px; color: var(--sena-navy); max-width: 580px;">
+              <!-- Opciones dinámicas de la API -->
+            </select>
+          </div>
+
+          <!-- MEDIDOR DE AFORO GIGANTE -->
+          <div class="medidor-aforo">
+            <div id="aforo-porcentaje-texto" class="porcentaje-gigante">0%</div>
+            <div id="aforo-conteo-detalle" style="font-size: 13px; color: #cbd5e1; font-weight: 600;">0 de 0 en sala</div>
+            
+            <div class="aforo-barra-macro">
+              <div id="aforo-barra-fill" class="aforo-barra-macro-fill"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GRID PRINCIPAL DE ESCANEO Y LOG -->
+      <section class="scanner-grid">
+        
+        <!-- COLUMNA IZQUIERDA: ESCÁNER QR -->
+        <div class="scanner-box">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h2 style="font-size: 18px; font-weight: 700; color: var(--sena-navy); display: flex; align-items: center; gap: 8px;">
+              <span>📷</span> Escáner de Código QR
+            </h2>
+            <span class="badge badge-presencial">Cámara HD / Móvil</span>
+          </div>
+
+          <!-- Viewport del Escáner con Láser de Animación -->
+          <div class="scanner-viewport-wrapper">
+            <div class="scanner-laser"></div>
+            <div class="scanner-target-frame"></div>
+            <div style="text-align: center; color: #94a3b8; padding: 20px;">
+              <span style="font-size: 44px; display: block; margin-bottom: 8px;">📱</span>
+              <p style="font-size: 13px;">Apunta la cámara al pase digital del asistente</p>
+            </div>
+          </div>
+
+          <!-- BANNER DE RESULTADO INSTANTÁNEO -->
+          <div id="resultado-validacion-banner" style="display: none;" class="resultado-banner">
+            <!-- Renderizado dinámico -->
+          </div>
+
+          <!-- BOTONES DE ACCIÓN RÁPIDA -->
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button onclick="simularEscaneoQR()" class="btn btn-primario btn-bloque">
+              ⚡ Simular Escaneo Instantáneo (Lectura QR)
+            </button>
+            <button onclick="simularEscaneoQR('FE-INVALIDO-000')" class="btn btn-secundario btn-sm">
+              Probar Pase Inválido
+            </button>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: BÚSQUEDA MANUAL E HISTORIAL LOG -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- BÚSQUEDA MANUAL POR DOCUMENTO -->
+          <div class="tarjeta">
+            <h3 class="titulo-seccion">🔍 Búsqueda Manual en Puerta</h3>
+            <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;">
+              En caso de pantalla de celular dañada o documento físico, ingresa la cédula o código de pase:
+            </p>
+            <form id="form-busqueda-manual" style="display: flex; gap: 10px;">
+              <input type="text" id="input-doc-manual" class="entrada-control" placeholder="Ej: 1098765432 o FE-SENA-782190" required style="flex: 1;">
+              <button type="submit" class="btn btn-navy">Validar</button>
+            </form>
+          </div>
+
+          <!-- TABLA LOG DE ACCESOS EN TIEMPO REAL -->
+          <div class="tarjeta" style="flex: 1;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <h3 class="titulo-seccion" style="margin-bottom: 0;">📋 Log de Ingresos en Sitio</h3>
+              <span style="font-size: 12px; color: var(--texto-secundario);">Últimas lecturas</span>
+            </div>
+
+            <div class="tabla-envoltorio">
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Asistente</th>
+                    <th>Documento / Ticket</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="log-accesos-cuerpo">
+                  <tr>
+                    <td colspan="4" style="text-align: center; color: var(--texto-secundario); padding: 24px;">
+                      Esperando primera lectura de acceso...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FOOTER INSTITUCIONAL -->
+    <footer style="background: var(--sena-navy); color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding: 24px; font-size: 13px; text-align: center;">
+      <p>Sistema de Gestión de Eventos Fondo Emprender SENA · Módulo Operativo de Aforo GAES-1 © 2026</p>
+    </footer>
+
+  </div>
+
+  <!-- SCRIPTS MODULARES JS -->
+  <script src="js/api.js"></script>
+  <script src="js/aforo.js"></script>
+</body>
+</html>
