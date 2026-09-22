@@ -101,7 +101,7 @@ async function procesarValidacionEntrada(codigoQR) {
   if (bannerResultado) {
     bannerResultado.style.display = 'flex';
     bannerResultado.className = 'resultado-banner';
-    bannerResultado.innerHTML = `<span>⏳</span> Validando pase en servidor SENA...`;
+    bannerResultado.innerHTML = `Validando pase en servidor SENA...`;
   }
 
   try {
@@ -118,10 +118,9 @@ async function procesarValidacionEntrada(codigoQR) {
       if (bannerResultado) {
         bannerResultado.className = 'resultado-banner aprobado';
         bannerResultado.innerHTML = `
-          <span style="font-size: 24px;">✅</span>
           <div>
             <div><strong>${respuesta.mensaje}</strong></div>
-            <div style="font-size: 13px; font-weight: normal;">Asistente: ${respuesta.ticket.asistenteNombre} (${respuesta.ticket.asistenteDocumento})</div>
+            <div style="font-size: 13px; font-weight: normal; margin-top: 2px;">Asistente: ${respuesta.ticket.asistenteNombre} (${respuesta.ticket.asistenteDocumento})</div>
           </div>
         `;
       }
@@ -136,10 +135,9 @@ async function procesarValidacionEntrada(codigoQR) {
       if (bannerResultado) {
         bannerResultado.className = 'resultado-banner rechazado';
         bannerResultado.innerHTML = `
-          <span style="font-size: 24px;">⛔</span>
           <div>
             <div><strong>${respuesta.mensaje}</strong></div>
-            <div style="font-size: 13px; font-weight: normal;">Código escaneado: ${codigoQR}</div>
+            <div style="font-size: 13px; font-weight: normal; margin-top: 2px;">Código escaneado: ${codigoQR}</div>
           </div>
         `;
       }
@@ -170,7 +168,7 @@ function agregarAlLogAccesos(ticket, estado) {
     <td><code>${ticket.asistenteDocumento || ticket.ticketId}</code></td>
     <td>
       <span class="badge ${estado === 'APROBADO' ? 'badge-disponible' : 'badge-agotado'}">
-        ${estado === 'APROBADO' ? '✓ Aprobado' : '✗ Denegado'}
+        ${estado === 'APROBADO' ? 'Aprobado' : 'Denegado'}
       </span>
     </td>
   `;

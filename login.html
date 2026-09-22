@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso al Sistema - Fondo Emprender SENA</title>
+  <meta name="description" content="Portal de autenticación y selección de roles para el Sistema de Gestión de Eventos del Fondo Emprender del SENA (GAES-1).">
+  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body class="login-body">
+
+  <div class="login-container">
+    
+    <!-- PANEL IZQUIERDO INSTITUCIONAL -->
+    <div class="login-banner">
+      <div>
+        <div class="login-brand">
+          <div class="logo-sena-badge">SENA</div>
+          <div>
+            <div style="font-size: 18px; font-weight: 800; letter-spacing: 0.8px; color: white;">FONDO EMPRENDER</div>
+            <div style="font-size: 12px; color: #94A3B8;">Sistema de Gestión de Eventos & Aforo</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 48px;">
+          <h1 style="font-size: 24px; font-weight: 800; line-height: 1.35; margin-bottom: 16px;">
+            Plataforma Integral de Convocatorias y Ruedas de Negocios
+          </h1>
+          <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;">
+            Accede con tus credenciales institucionales o regístrate según tu rol para gestionar convocatorias, validar pases QR en puerta o explorar la agenda pública SENA.
+          </p>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; color: #64748B; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+        Servicio Nacional de Aprendizaje SENA · GAES-1 © 2026
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: FORMULARIOS DE LOGIN / REGISTRO / VISOR -->
+    <div class="login-form-side">
+      
+      <div style="margin-bottom: 20px; text-align: center;">
+        <h2 style="font-size: 22px; font-weight: 800; color: var(--sena-navy);">Bienvenido(a)</h2>
+        <p style="font-size: 13px; color: var(--texto-secundario);">Selecciona la modalidad de ingreso al sistema</p>
+      </div>
+
+      <!-- Pestañas de Alternancia -->
+      <div class="tab-nav">
+        <button id="btn-tab-login" class="activo" onclick="mostrarPestana('login')">Iniciar Sesión</button>
+        <button id="btn-tab-registro" onclick="mostrarPestana('registro')">Registrarse</button>
+      </div>
+
+      <!-- FORMULARIO DE INICIO DE SESIÓN -->
+      <div id="pantalla-login">
+        <form onsubmit="procesarInicioSesion(event)">
+          <div class="campo-grupo" style="margin-bottom: 16px;">
+            <label for="login-email" class="campo-label">Correo Electrónico *</label>
+            <input type="email" id="login-email" class="entrada-control" required placeholder="ejemplo@sena.edu.co">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 20px;">
+            <label for="login-password" class="campo-label">Contraseña *</label>
+            <input type="password" id="login-password" class="entrada-control" required placeholder="••••••••">
+          </div>
+
+          <button type="submit" class="btn btn-primario btn-bloque" style="padding: 11px; font-size: 14.5px;">
+            Iniciar Sesión
+          </button>
+        </form>
+
+        <!-- ACCESO DIRECTO DEMO POR ROLES -->
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--sena-navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            Acceso Rápido por Rol (Cuentas Demo):
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            <div class="role-card" onclick="ingresarComoDemo('admin@sena.edu.co', 'Admin123!')">
+              <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Administrador</span>
+            </div>
+            <div class="role-card" onclick="ingresarComoDemo('logistica@sena.edu.co', 'Logistica123!')">
+              <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Logística (Puerta)</span>
+            </div>
+            <div class="role-card" onclick="ingresarComoDemo('emprendedor@sena.edu.co', 'Emprendedor123!')">
+              <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Emprendedor SENA</span>
+            </div>
+            <div class="role-card" onclick="ingresarComoDemo('comite@sena.edu.co', 'Comite123!')">
+              <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Comité Evaluador</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTÓN ACCESO COMO VISOR PÚBLICO -->
+        <button onclick="ingresarComoVisor()" class="btn-visor">
+          Ingresar como Visor Público (Invitado)
+        </button>
+      </div>
+
+      <!-- FORMULARIO DE REGISTRO DE NUEVO USUARIO -->
+      <div id="pantalla-registro" style="display: none;">
+        <form onsubmit="procesarRegistro(event)">
+          <div class="campo-grupo" style="margin-bottom: 12px;">
+            <label for="reg-nombre" class="campo-label">Nombre Completo *</label>
+            <input type="text" id="reg-nombre" class="entrada-control" required placeholder="Ej: Ana María López">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 12px;">
+            <label for="reg-documento" class="campo-label">Número de Documento (Cédula/TI) *</label>
+            <input type="text" id="reg-documento" class="entrada-control" required placeholder="Ej: 1025443322">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 12px;">
+            <label for="reg-email" class="campo-label">Correo Electrónico *</label>
+            <input type="email" id="reg-email" class="entrada-control" required placeholder="ana.lopez@sena.edu.co">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 12px;">
+            <label for="reg-password" class="campo-label">Contraseña *</label>
+            <input type="password" id="reg-password" class="entrada-control" required placeholder="••••••••">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 20px;">
+            <label for="reg-rol" class="campo-label">Seleccionar Rol *</label>
+            <select id="reg-rol" class="entrada-control" required style="font-weight: 700;">
+              <option value="Visor Público / Asistente">Visor Público / Asistente</option>
+              <option value="Emprendedor SENA">Emprendedor SENA / Fondo Emprender</option>
+              <option value="Comprador / Inversionista">Comprador / Inversionista</option>
+              <option value="Comité Evaluador">Comité Evaluador de Eventos</option>
+              <option value="Operador de Logística">Operador de Logística (Control de Aforo)</option>
+              <option value="Administrador">Administrador de Sistema</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primario btn-bloque" style="padding: 11px; font-size: 14.5px;">
+            Crear Cuenta e Ingresar
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
