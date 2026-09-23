@@ -22,7 +22,7 @@
           </div>
         </div>
 
-        <nav class="nav-principal" role="navigation" aria-label="Navegación principal">
+        <nav class="nav-principal" aria-label="Navegación principal">
           <a href="index.html" class="nav-link activo" aria-current="page">
             Calendario Público
           </a>
@@ -39,8 +39,8 @@
     <!-- CONTENIDO PRINCIPAL -->
     <main class="contenido-principal" role="main">
       
-      <!-- HERO BANNER INSTITUCIONAL -->
-      <section class="hero-landing" aria-labelledby="hero-titulo">
+      <!-- HERO BANNER INSTITUCIONAL SEMÁNTICO -->
+      <header class="hero-landing" aria-labelledby="hero-titulo">
         <div class="hero-grid">
           <div class="hero-texto">
             <h1 id="hero-titulo">Ecosistema de <span>Emprendimiento e Innovación SENA</span></h1>
@@ -48,42 +48,42 @@
               Explora convocatorias, talleres de capacitación y ruedas de negocios del Fondo Emprender. 
               Inscríbete en tiempo real y gestiona tu Pase Digital con Código QR para un ingreso rápido en sitio.
             </p>
-            <div class="hero-stats">
-              <div class="stat-box">
-                <div class="stat-numero" id="stat-total-eventos">0</div>
-                <div class="stat-label">Eventos Disponibles</div>
-              </div>
-              <div class="stat-box">
-                <div class="stat-numero" id="stat-total-cupos">0</div>
-                <div class="stat-label">Cupos Libres</div>
-              </div>
-              <div class="stat-box">
-                <div class="stat-numero">100%</div>
-                <div class="stat-label">Acceso Gratuito SENA</div>
-              </div>
-            </div>
+            <aside class="hero-stats" aria-label="Estadísticas de la plataforma">
+              <article class="stat-box">
+                <span class="stat-numero" id="stat-total-eventos">0</span>
+                <span class="stat-label">Eventos Disponibles</span>
+              </article>
+              <article class="stat-box">
+                <span class="stat-numero" id="stat-total-cupos">0</span>
+                <span class="stat-label">Cupos Libres</span>
+              </article>
+              <article class="stat-box">
+                <span class="stat-numero">100%</span>
+                <span class="stat-label">Acceso Gratuito SENA</span>
+              </article>
+            </aside>
           </div>
         </div>
-      </section>
+      </header>
 
-      <!-- BARRA DE BÚSQUEDA Y FILTROS INTERACTIVOS -->
-      <section class="seccion-filtros" aria-label="Filtros del calendario">
-        <div class="filtros-header">
+      <!-- BARRA DE BÚSQUEDA Y FILTROS INTERACTIVOS SEMÁNTICOS -->
+      <section class="seccion-filtros" aria-label="Filtros y búsqueda del calendario">
+        <header class="filtros-header">
           <h2 class="filtros-titulo">
             Explorar Eventos Institucionales
           </h2>
 
-          <div class="vistas-toggle" role="group" aria-label="Vista del calendario">
-            <button id="btn-vista-grid" class="btn-vista activo" aria-label="Vista Grid de Tarjetas">
+          <nav class="vistas-toggle" role="group" aria-label="Vista del calendario">
+            <button id="btn-vista-grid" type="button" class="btn-vista activo" aria-label="Vista Grid de Tarjetas">
               Tarjetas
             </button>
-            <button id="btn-vista-lista" class="btn-vista" aria-label="Vista de Lista compacta">
+            <button id="btn-vista-lista" type="button" class="btn-vista" aria-label="Vista de Lista compacta">
               Lista
             </button>
-          </div>
-        </div>
+          </nav>
+        </header>
 
-        <div class="grid-filtros-inputs">
+        <form class="grid-filtros-inputs" role="search" aria-label="Buscador de eventos" onsubmit="event.preventDefault()">
           <div class="campo-grupo">
             <label for="input-buscar-evento" class="campo-label">Buscar por Palabra Clave</label>
             <input type="search" id="input-buscar-evento" class="entrada-control" placeholder="Ej: Macrorrueda, Agrotech, CANVAS, Bogotá...">
@@ -108,20 +108,20 @@
             <label for="input-fecha-fin" class="campo-label">Fecha Hasta</label>
             <input type="date" id="input-fecha-fin" class="entrada-control">
           </div>
-        </div>
+        </form>
 
         <!-- Pills de Categorías de Eventos -->
-        <div class="categorias-pills" role="tablist" aria-label="Filtrar por categoría">
-          <button class="pill-btn activo" data-categoria="todos" role="tab" aria-selected="true">Todos los Eventos</button>
-          <button class="pill-btn" data-categoria="rueda" role="tab" aria-selected="false">Ruedas de Negocios</button>
-          <button class="pill-btn" data-categoria="convocatoria" role="tab" aria-selected="false">Convocatorias</button>
-          <button class="pill-btn" data-categoria="taller" role="tab" aria-selected="false">Talleres y Capacitación</button>
-          <button class="pill-btn" data-categoria="conferencia" role="tab" aria-selected="false">Conferencias y Foros</button>
-        </div>
+        <nav class="categorias-pills" role="tablist" aria-label="Filtrar por categoría de evento">
+          <button type="button" class="pill-btn activo" data-categoria="todos" role="tab" aria-selected="true">Todos los Eventos</button>
+          <button type="button" class="pill-btn" data-categoria="rueda" role="tab" aria-selected="false">Ruedas de Negocios</button>
+          <button type="button" class="pill-btn" data-categoria="convocatoria" role="tab" aria-selected="false">Convocatorias</button>
+          <button type="button" class="pill-btn" data-categoria="taller" role="tab" aria-selected="false">Talleres y Capacitación</button>
+          <button type="button" class="pill-btn" data-categoria="conferencia" role="tab" aria-selected="false">Conferencias y Foros</button>
+        </nav>
       </section>
 
       <!-- SECCIÓN DEL MAIN GRID/LIST DE EVENTOS -->
-      <section id="seccion-eventos-main" aria-live="polite">
+      <section id="seccion-eventos-main" aria-label="Listado de eventos públicos" aria-live="polite">
         <div id="grid-eventos-contenedor" class="grid-eventos">
           <!-- Carga inicial por Skeletons vía JavaScript -->
         </div>
@@ -129,12 +129,12 @@
 
     </main>
 
-    <!-- FOOTER INSTITUCIONAL -->
-    <footer style="background: var(--sena-navy); color: #94A3B8; border-top: 2px solid var(--sena-verde); padding: 32px 24px; font-size: 13.5px; text-align: center;">
+    <!-- FOOTER INSTITUCIONAL SEMÁNTICO -->
+    <footer class="footer-institucional" style="background: var(--sena-navy); color: #94A3B8; border-top: 2px solid var(--sena-verde); padding: 32px 24px; font-size: 13.5px; text-align: center;">
       <div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px;">
         <p style="color: #FFFFFF; font-weight: 800;">Servicio Nacional de Aprendizaje SENA - Fondo Emprender</p>
         <p>Sistema de Gestión de Eventos y Ruedas de Negocios · GAES-1 © 2026</p>
-        <p style="font-size: 12px; color: #64748B;">Cumplimiento de Estándares WCAG 2.1 AA para Accesibilidad Web Institucional</p>
+        <small style="font-size: 12px; color: #64748B;">Cumplimiento de Estándares WCAG 2.1 AA para Accesibilidad Web Institucional</small>
       </div>
     </footer>
 
@@ -142,26 +142,26 @@
 
   <!-- MODAL DE DETALLE DE EVENTO -->
   <div id="modal-detalle-evento" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header">
+    <article class="modal-card">
+      <header class="modal-header">
         <h2>Detalle del Evento</h2>
-        <button onclick="cerrarModal('modal-detalle-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
-      </div>
-      <div id="modal-detalle-cuerpo" class="modal-body">
+        <button type="button" onclick="cerrarModal('modal-detalle-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </header>
+      <section id="modal-detalle-cuerpo" class="modal-body">
         <!-- Renderizado dinámico -->
-      </div>
-    </div>
+      </section>
+    </article>
   </div>
 
   <!-- MODAL DE REGISTRO E INSCRIPCIÓN CON PASE DIGITAL QR -->
   <div id="modal-registro-evento" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header">
+    <article class="modal-card">
+      <header class="modal-header">
         <h2 id="modal-registro-titulo">Inscripción al Evento</h2>
-        <button onclick="cerrarModal('modal-registro-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
-      </div>
+        <button type="button" onclick="cerrarModal('modal-registro-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </header>
 
-      <div class="modal-body">
+      <section class="modal-body">
         <!-- Formulario de Registro -->
         <form id="form-registro-asistente" onsubmit="procesarInscripcion(event)">
           <input type="hidden" id="input-evento-id">
@@ -195,38 +195,39 @@
         </form>
 
         <!-- VISTA DE PASE DIGITAL GENERADO CON CÓDIGO QR -->
-        <div id="contenedor-pase-qr" style="display: none; flex-direction: column; align-items: center;" class="ticket-contenedor">
-          <div style="background: var(--sena-verde); color: white; padding: 4px 14px; border-radius: var(--radio-full); font-size: 12px; font-weight: 700; text-transform: uppercase;">
+        <article id="contenedor-pase-qr" style="display: none; flex-direction: column; align-items: center;" class="ticket-contenedor">
+          <span style="background: var(--sena-verde); color: white; padding: 4px 14px; border-radius: var(--radio-full); font-size: 12px; font-weight: 700; text-transform: uppercase;">
             Pase Confirmado SENA
-          </div>
+          </span>
           
           <h3 id="ticket-evento" style="font-size: 16px; color: var(--sena-navy); text-align: center;">-</h3>
           <p id="ticket-nombre" style="font-size: 18px; font-weight: 800; color: var(--sena-navy);">-</p>
           <p id="ticket-doc" style="font-size: 13px; color: var(--texto-secundario);">-</p>
+          <div id="ticket-codigo" class="ticket-codigo-texto">-</div>
 
-          <div class="qr-canvas-box">
+          <figure class="qr-canvas-box">
             <canvas id="canvas-qr-generado"></canvas>
-          </div>
+          </figure>
 
-          <div style="display: flex; gap: 10px; width: 100%; margin-top: 12px;">
-            <button onclick="window.print()" class="btn btn-secundario btn-sm btn-bloque">Imprimir / Guardar PDF</button>
-            <button onclick="cerrarModal('modal-registro-evento')" class="btn btn-primario btn-sm btn-bloque">Finalizar</button>
-          </div>
-        </div>
+          <footer style="display: flex; gap: 10px; width: 100%; margin-top: 12px;">
+            <button type="button" onclick="window.print()" class="btn btn-secundario btn-sm btn-bloque">Descargar PDF / Imprimir</button>
+            <button type="button" onclick="cerrarModal('modal-registro-evento')" class="btn btn-primario btn-sm btn-bloque">Finalizar</button>
+          </footer>
+        </article>
 
-      </div>
-    </div>
+      </section>
+    </article>
   </div>
 
   <!-- MODAL DE CREACIÓN DE EVENTOS (EXCLUSIVO ADMIN & EMPRENDEDOR SENA) -->
   <div id="modal-crear-evento" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header">
+    <article class="modal-card">
+      <header class="modal-header">
         <h2>Publicar Nuevo Evento SENA</h2>
-        <button onclick="cerrarModal('modal-crear-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
-      </div>
+        <button type="button" onclick="cerrarModal('modal-crear-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </header>
 
-      <div class="modal-body">
+      <section class="modal-body">
         <form onsubmit="procesarCreacionEvento(event)">
           <div class="campo-grupo" style="margin-bottom: 14px;">
             <label for="crear-titulo" class="campo-label">Título del Evento / Convocatoria *</label>
@@ -281,32 +282,32 @@
 
           <button type="submit" class="btn btn-primario btn-bloque">Publicar Evento en Calendario</button>
         </form>
-      </div>
-    </div>
+      </section>
+    </article>
   </div>
 
   <!-- MODAL DE LOGIN Y REGISTRO CON ROLES RBAC -->
   <div id="modal-login" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header">
+    <article class="modal-card">
+      <header class="modal-header">
         <h2 id="modal-login-titulo">Acceso Institucional & Registro - Fondo Emprender</h2>
-        <button onclick="cerrarModal('modal-login')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
-      </div>
+        <button type="button" onclick="cerrarModal('modal-login')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </header>
 
-      <div class="modal-body">
+      <section class="modal-body">
         
         <!-- Pestañas de Alternancia Login / Registro -->
-        <div style="display: flex; background: var(--fondo); border: 1px solid var(--borde); border-radius: var(--radio-sm); padding: 4px; margin-bottom: 20px; gap: 4px;">
-          <button id="tab-btn-login" onclick="cambiarTabLogin('login')" class="btn-vista activo" style="flex: 1; justify-content: center; padding: 8px;">
+        <nav class="tab-nav-wrapper" style="display: flex; background: var(--fondo); border: 1px solid var(--borde); border-radius: var(--radio-sm); padding: 4px; margin-bottom: 20px; gap: 4px;">
+          <button type="button" id="tab-btn-login" onclick="cambiarTabLogin('login')" class="btn-vista activo" style="flex: 1; justify-content: center; padding: 8px;">
             Iniciar Sesión
           </button>
-          <button id="tab-btn-registro" onclick="cambiarTabLogin('registro')" class="btn-vista" style="flex: 1; justify-content: center; padding: 8px;">
+          <button type="button" id="tab-btn-registro" onclick="cambiarTabLogin('registro')" class="btn-vista" style="flex: 1; justify-content: center; padding: 8px;">
             Registrar Nuevo Usuario
           </button>
-        </div>
+        </nav>
 
         <!-- FORMULARIO 1: INICIAR SESIÓN -->
-        <div id="form-login-seccion">
+        <section id="form-login-seccion">
           <form onsubmit="ejecutarLogin(event)">
             <div class="campo-grupo" style="margin-bottom: 16px;">
               <label for="login-email" class="campo-label">Correo Electrónico *</label>
@@ -322,29 +323,29 @@
           </form>
 
           <!-- Acceso Rápido Demo por Roles -->
-          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
+          <aside style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
             <p style="font-size: 11.5px; font-weight: 700; color: var(--sena-navy); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
               Acceso Rápido por Rol (Cuentas Demo):
             </p>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-              <button onclick="loginDemo('admin@sena.edu.co', 'Admin123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+              <button type="button" onclick="loginDemo('admin@sena.edu.co', 'Admin123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
                 Admin (Carlos)
               </button>
-              <button onclick="loginDemo('logistica@sena.edu.co', 'Logistica123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+              <button type="button" onclick="loginDemo('logistica@sena.edu.co', 'Logistica123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
                 Logística (María)
               </button>
-              <button onclick="loginDemo('emprendedor@sena.edu.co', 'Emprendedor123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+              <button type="button" onclick="loginDemo('emprendedor@sena.edu.co', 'Emprendedor123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
                 Emprendedor (Juan)
               </button>
-              <button onclick="loginDemo('comite@sena.edu.co', 'Comite123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+              <button type="button" onclick="loginDemo('comite@sena.edu.co', 'Comite123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
                 Comité (Dra. Elena)
               </button>
             </div>
-          </div>
-        </div>
+          </aside>
+        </section>
 
         <!-- FORMULARIO 2: REGISTRAR NUEVO USUARIO -->
-        <div id="form-registro-seccion" style="display: none;">
+        <section id="form-registro-seccion" style="display: none;">
           <form onsubmit="ejecutarRegistroUsuario(event)">
             <div class="campo-grupo" style="margin-bottom: 14px;">
               <label for="nuevo-nombre" class="campo-label">Nombre Completo *</label>
@@ -373,20 +374,20 @@
                 <option value="Comprador / Inversionista">Comprador / Inversionista</option>
                 <option value="Comité Evaluador">Comité Evaluador de Eventos</option>
                 <option value="Operador de Logística">Operador de Logística (Control Aforo)</option>
-                <option value="Administrador">Administrador de Sistema</option>
                 <option value="Aprendiz / Público General">Aprendiz / Público General</option>
               </select>
             </div>
 
             <button type="submit" class="btn btn-primario btn-bloque">Crear Cuenta e Iniciar Sesión</button>
           </form>
-        </div>
+        </section>
 
-      </div>
-    </div>
+      </section>
+    </article>
   </div>
 
   <!-- SCRIPTS MODULARES JS -->
+  <script src="js/accessibility.js"></script>
   <script src="js/api.js"></script>
   <script src="js/calendar.js"></script>
 </body>

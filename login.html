@@ -10,16 +10,16 @@
 </head>
 <body class="login-body">
 
-  <div class="login-container">
+  <main class="login-container" role="main">
     
-    <!-- PANEL IZQUIERDO INSTITUCIONAL -->
-    <div class="login-banner">
+    <!-- PANEL IZQUIERDO INSTITUCIONAL SEMÁNTICO -->
+    <header class="login-banner">
       <div>
         <div class="login-brand">
-          <div class="logo-sena-badge">SENA</div>
+          <div class="logo-sena-badge" aria-hidden="true">SENA</div>
           <div>
-            <div style="font-size: 18px; font-weight: 800; letter-spacing: 0.8px; color: white;">FONDO EMPRENDER</div>
-            <div style="font-size: 12px; color: #94A3B8;">Sistema de Gestión de Eventos & Aforo</div>
+            <span style="font-size: 18px; font-weight: 800; letter-spacing: 0.8px; color: white; display: block;">FONDO EMPRENDER</span>
+            <span style="font-size: 12px; color: #94A3B8; display: block;">Sistema de Gestión de Eventos & Aforo</span>
           </div>
         </div>
 
@@ -33,27 +33,27 @@
         </div>
       </div>
 
-      <div style="font-size: 12px; color: #64748B; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+      <footer style="font-size: 12px; color: #64748B; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
         Servicio Nacional de Aprendizaje SENA · GAES-1 © 2026
-      </div>
-    </div>
+      </footer>
+    </header>
 
     <!-- PANEL DERECHO: FORMULARIOS DE LOGIN / REGISTRO / VISOR -->
-    <div class="login-form-side">
+    <section class="login-form-side" aria-label="Portal de ingreso y registro">
       
-      <div style="margin-bottom: 20px; text-align: center;">
+      <header style="margin-bottom: 20px; text-align: center;">
         <h2 style="font-size: 22px; font-weight: 800; color: var(--sena-navy);">Bienvenido(a)</h2>
         <p style="font-size: 13px; color: var(--texto-secundario);">Selecciona la modalidad de ingreso al sistema</p>
-      </div>
+      </header>
 
       <!-- Pestañas de Alternancia -->
-      <div class="tab-nav">
-        <button id="btn-tab-login" class="activo" onclick="mostrarPestana('login')">Iniciar Sesión</button>
-        <button id="btn-tab-registro" onclick="mostrarPestana('registro')">Registrarse</button>
-      </div>
+      <nav class="tab-nav" aria-label="Navegación entre iniciar sesión y registro">
+        <button type="button" id="btn-tab-login" class="activo" onclick="mostrarPestana('login')">Iniciar Sesión</button>
+        <button type="button" id="btn-tab-registro" onclick="mostrarPestana('registro')">Registrarse</button>
+      </nav>
 
       <!-- FORMULARIO DE INICIO DE SESIÓN -->
-      <div id="pantalla-login">
+      <section id="pantalla-login" aria-label="Iniciar sesión">
         <form onsubmit="procesarInicioSesion(event)">
           <div class="campo-grupo" style="margin-bottom: 16px;">
             <label for="login-email" class="campo-label">Correo Electrónico *</label>
@@ -71,35 +71,35 @@
         </form>
 
         <!-- ACCESO DIRECTO DEMO POR ROLES -->
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
-          <div style="font-size: 11px; font-weight: 700; color: var(--sena-navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+        <aside style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);" aria-label="Cuentas demo de prueba">
+          <p style="font-size: 11px; font-weight: 700; color: var(--sena-navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
             Acceso Rápido por Rol (Cuentas Demo):
-          </div>
+          </p>
 
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-            <div class="role-card" onclick="ingresarComoDemo('admin@sena.edu.co', 'Admin123!')">
+            <button type="button" class="role-card" onclick="ingresarComoDemo('admin@sena.edu.co', 'Admin123!')">
               <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Administrador</span>
-            </div>
-            <div class="role-card" onclick="ingresarComoDemo('logistica@sena.edu.co', 'Logistica123!')">
+            </button>
+            <button type="button" class="role-card" onclick="ingresarComoDemo('logistica@sena.edu.co', 'Logistica123!')">
               <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Logística (Puerta)</span>
-            </div>
-            <div class="role-card" onclick="ingresarComoDemo('emprendedor@sena.edu.co', 'Emprendedor123!')">
+            </button>
+            <button type="button" class="role-card" onclick="ingresarComoDemo('emprendedor@sena.edu.co', 'Emprendedor123!')">
               <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Emprendedor SENA</span>
-            </div>
-            <div class="role-card" onclick="ingresarComoDemo('comite@sena.edu.co', 'Comite123!')">
+            </button>
+            <button type="button" class="role-card" onclick="ingresarComoDemo('comite@sena.edu.co', 'Comite123!')">
               <span style="font-size: 12px; font-weight: 700; color: var(--sena-navy);">Comité Evaluador</span>
-            </div>
+            </button>
           </div>
-        </div>
+        </aside>
 
         <!-- BOTÓN ACCESO COMO VISOR PÚBLICO -->
-        <button onclick="ingresarComoVisor()" class="btn-visor">
+        <button type="button" onclick="ingresarComoVisor()" class="btn-visor">
           Ingresar como Visor Público (Invitado)
         </button>
-      </div>
+      </section>
 
       <!-- FORMULARIO DE REGISTRO DE NUEVO USUARIO -->
-      <div id="pantalla-registro" style="display: none;">
+      <section id="pantalla-registro" style="display: none;" aria-label="Registrar nueva cuenta">
         <form onsubmit="procesarRegistro(event)">
           <div class="campo-grupo" style="margin-bottom: 12px;">
             <label for="reg-nombre" class="campo-label">Nombre Completo *</label>
@@ -129,7 +129,6 @@
               <option value="Comprador / Inversionista">Comprador / Inversionista</option>
               <option value="Comité Evaluador">Comité Evaluador de Eventos</option>
               <option value="Operador de Logística">Operador de Logística (Control de Aforo)</option>
-              <option value="Administrador">Administrador de Sistema</option>
             </select>
           </div>
 
@@ -137,12 +136,13 @@
             Crear Cuenta e Ingresar
           </button>
         </form>
-      </div>
+      </section>
 
-    </div>
+    </section>
 
-  </div>
+  </main>
 
+  <script src="js/accessibility.js"></script>
   <script src="js/api.js"></script>
   <script src="js/login.js"></script>
 </body>

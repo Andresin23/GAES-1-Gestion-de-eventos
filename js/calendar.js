@@ -259,15 +259,19 @@ function abrirModalInscripcion(eventoId) {
   if (tituloModal) tituloModal.textContent = `Registro: ${evento.titulo}`;
   document.getElementById('input-evento-id').value = evento.id;
   
-  // Auto-completar datos si el usuario tiene sesión activa
+  const inputNombre = document.getElementById('reg-nombre');
+  const inputDocumento = document.getElementById('reg-documento');
+  const inputCorreo = document.getElementById('reg-correo');
+  const selectRol = document.getElementById('reg-rol');
+
+  // Auto-completar únicamente si hay sesión activa con datos reales
   const sesion = obtenerSesion();
-  if (sesion && sesion.usuario) {
+  if (sesion && sesion.usuario && sesion.usuario.id !== 0) {
     const u = sesion.usuario;
-    if (document.getElementById('reg-nombre')) document.getElementById('reg-nombre').value = u.nombre || '';
-    if (document.getElementById('reg-documento')) document.getElementById('reg-documento').value = u.documento || '';
-    if (document.getElementById('reg-correo')) document.getElementById('reg-correo').value = u.email || '';
-    if (document.getElementById('reg-rol') && u.rol) {
-      const selectRol = document.getElementById('reg-rol');
+    if (inputNombre) inputNombre.value = u.nombre || '';
+    if (inputDocumento) inputDocumento.value = u.documento || '';
+    if (inputCorreo) inputCorreo.value = u.email || '';
+    if (selectRol && u.rol) {
       for (let i = 0; i < selectRol.options.length; i++) {
         if (selectRol.options[i].value === u.rol) {
           selectRol.selectedIndex = i;
@@ -275,7 +279,21 @@ function abrirModalInscripcion(eventoId) {
         }
       }
     }
+  } else {
+    // Si no hay sesión o es Visor Público/Invitado, dejar cajas completamente limpias para escribir libremente
+    if (inputNombre) inputNombre.value = '';
+    if (inputDocumento) inputDocumento.value = '';
+    if (inputCorreo) inputCorreo.value = '';
   }
+
+  // Permitir escribir directamente al enfocar seleccionando todo el texto si hubiese alguno
+  [inputNombre, inputDocumento, inputCorreo].forEach(input => {
+    if (input) {
+      input.onfocus = function() {
+        this.select();
+      };
+    }
+  });
 
   formInscripcion.style.display = 'block';
   contenedorPase.style.display = 'none';

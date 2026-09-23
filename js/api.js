@@ -209,6 +209,7 @@ function verificarAccesoSistema() {
   const rutaActual = window.location.pathname;
   const esLogin = rutaActual.endsWith('login.html');
   const esAforo = rutaActual.endsWith('control-aforo.html');
+  const esCalendario = rutaActual.endsWith('index.html') || rutaActual.endsWith('/') || rutaActual === '';
   const sesion = obtenerSesion();
 
   // 1. Redirección a login si no hay sesión
@@ -217,15 +218,30 @@ function verificarAccesoSistema() {
     return;
   }
 
-  // 2. Control RBAC Estricto para Control de Aforo (Puerta)
-  if (esAforo && sesion) {
+  if (sesion && sesion.usuario) {
     const rol = sesion.usuario.rol;
-    const esAutorizadoPuerta = rol === 'Operador de Logística' || rol === 'Administrador';
-    if (!esAutorizadoPuerta) {
-      mostrarToast(`Acceso Restringido: Tu rol (${rol}) no posee permisos de Operador de Logística en puerta.`, 'error');
+    const esLogistico = rol === 'Operador de Logística' || rol === 'Logística';
+    const esEmprendedor = rol === 'Emprendedor SENA' || rol === 'Emprendedor';
+    const esComite = rol === 'Comité Evaluador' || rol === 'Comité';
+    const esVisor = rol === 'Visor Público' || rol === 'Visor Público / Asistente' || rol === 'Aprendiz / Público General';
+    const esAdmin = rol === 'Administrador';
+
+    // 2. Logístico: SOLO puede estar en control-aforo.html
+    if (esLogistico && !esAforo && !esLogin) {
+      mostrarToast('Rol Logístico: Redirigiendo al Panel de Control de Aforo...', 'exito');
+      setTimeout(() => {
+        window.location.href = 'control-aforo.html';
+      }, 300);
+      return;
+    }
+
+    // 3. Emprendedor, Comité y Visor Público: NO pueden acceder a control-aforo.html
+    if (esAforo && (esEmprendedor || esComite || esVisor)) {
+      mostrarToast(`Acceso Restringido: Tu rol (${rol}) no tiene permisos para el Control de Aforo en Puerta.`, 'error');
       setTimeout(() => {
         window.location.href = 'index.html';
-      }, 1500);
+      }, 1000);
+      return;
     }
   }
 }
@@ -544,15 +560,36 @@ function actualizarBarraUsuarioHeader() {
 
   const sesion = obtenerSesion();
 
+  // Gestión de visibilidad de links de navegación
+  const linkCalendario = document.querySelector('.nav-link[href="index.html"]');
+  const linkAforo = document.querySelector('.nav-link[href="control-aforo.html"]');
+  const linkAcceso = document.querySelector('a[href="index.html#login"]');
+
+  if (linkAcceso) linkAcceso.style.display = 'none';
+
   if (sesion && sesion.usuario) {
     const u = sesion.usuario;
     const iniciales = u.nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-    const linkAcceso = document.querySelector('a[href="index.html#login"]');
-    if (linkAcceso) linkAcceso.style.display = 'none';
+    const esLogistico = u.rol === 'Operador de Logística' || u.rol === 'Logística';
+    const esEmprendedor = u.rol === 'Emprendedor SENA' || u.rol === 'Emprendedor';
+    const esComite = u.rol === 'Comité Evaluador' || u.rol === 'Comité';
+    const esVisor = u.rol === 'Visor Público' || u.rol === 'Visor Público / Asistente' || u.rol === 'Aprendiz / Público General';
+    const esAdmin = u.rol === 'Administrador';
 
-    // Botón especial para crear eventos si el rol lo permite (Administrador o Emprendedor SENA)
-    const puedeCrearEvento = u.rol === 'Administrador' || u.rol === 'Emprendedor SENA' || u.rol === 'Emprendedor';
+    // Ajustar visibilidad de navegación por rol
+    if (linkAforo) {
+      // Solo Admin y Logístico pueden ver Control de Aforo
+      linkAforo.style.display = (esAdmin || esLogistico) ? 'inline-flex' : 'none';
+    }
+
+    if (linkCalendario) {
+      // Logístico no debe ver enlace al Calendario
+      linkCalendario.style.display = esLogistico ? 'none' : 'inline-flex';
+    }
+
+    // Botón especial para crear eventos (Solo Administrador o Emprendedor SENA)
+    const puedeCrearEvento = esAdmin || esEmprendedor;
     const botonCrearEventoHTML = puedeCrearEvento ? `
       <button onclick="abrirModalCrearEvento()" class="btn btn-primario btn-sm" style="font-size: 13px; font-weight: 700; background: #00A859; color: white;">
         Crear Evento
@@ -575,6 +612,9 @@ function actualizarBarraUsuarioHeader() {
       </button>
     `;
   } else {
+    if (linkAforo) linkAforo.style.display = 'none';
+    if (linkCalendario) linkCalendario.style.display = 'inline-flex';
+
     userBox.innerHTML = `
       <a href="login.html" class="btn btn-primario btn-sm" style="font-size: 13px; text-decoration: none;">
         Iniciar Sesión / Registro
