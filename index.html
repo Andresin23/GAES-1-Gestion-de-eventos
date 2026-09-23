@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendario Público de Eventos - Fondo Emprender SENA</title>
+  <meta name="description" content="Plataforma de gestión de eventos, convocatorias y ruedas de negocios del Fondo Emprender del SENA.">
+  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+  <div class="layout">
+    
+    <!-- ENCABEZADO INSTITUCIONAL SENA -->
+    <header class="header-institucional" role="banner">
+      <div class="header-contenedor">
+        <div class="brand-sena">
+          <div class="logo-sena-badge" aria-hidden="true">SENA</div>
+          <div class="brand-info">
+            <span class="brand-titulo">FONDO EMPRENDER</span>
+            <span class="brand-subtitulo">Sistema de Gestión de Eventos y Ruedas de Negocios</span>
+          </div>
+        </div>
+
+        <nav class="nav-principal" role="navigation" aria-label="Navegación principal">
+          <a href="index.html" class="nav-link activo" aria-current="page">
+            Calendario Público
+          </a>
+          <a href="control-aforo.html" class="nav-link">
+            Control de Aforo (Puerta)
+          </a>
+          <a href="index.html#login" class="nav-link">
+            Acceso Institucional
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="contenido-principal" role="main">
+      
+      <!-- HERO BANNER INSTITUCIONAL -->
+      <section class="hero-landing" aria-labelledby="hero-titulo">
+        <div class="hero-grid">
+          <div class="hero-texto">
+            <h1 id="hero-titulo">Ecosistema de <span>Emprendimiento e Innovación SENA</span></h1>
+            <p>
+              Explora convocatorias, talleres de capacitación y ruedas de negocios del Fondo Emprender. 
+              Inscríbete en tiempo real y gestiona tu Pase Digital con Código QR para un ingreso rápido en sitio.
+            </p>
+            <div class="hero-stats">
+              <div class="stat-box">
+                <div class="stat-numero" id="stat-total-eventos">0</div>
+                <div class="stat-label">Eventos Disponibles</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-numero" id="stat-total-cupos">0</div>
+                <div class="stat-label">Cupos Libres</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-numero">100%</div>
+                <div class="stat-label">Acceso Gratuito SENA</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BARRA DE BÚSQUEDA Y FILTROS INTERACTIVOS -->
+      <section class="seccion-filtros" aria-label="Filtros del calendario">
+        <div class="filtros-header">
+          <h2 class="filtros-titulo">
+            Explorar Eventos Institucionales
+          </h2>
+
+          <div class="vistas-toggle" role="group" aria-label="Vista del calendario">
+            <button id="btn-vista-grid" class="btn-vista activo" aria-label="Vista Grid de Tarjetas">
+              Tarjetas
+            </button>
+            <button id="btn-vista-lista" class="btn-vista" aria-label="Vista de Lista compacta">
+              Lista
+            </button>
+          </div>
+        </div>
+
+        <div class="grid-filtros-inputs">
+          <div class="campo-grupo">
+            <label for="input-buscar-evento" class="campo-label">Buscar por Palabra Clave</label>
+            <input type="search" id="input-buscar-evento" class="entrada-control" placeholder="Ej: Macrorrueda, Agrotech, CANVAS, Bogotá...">
+          </div>
+
+          <div class="campo-grupo">
+            <label for="select-modalidad-filtro" class="campo-label">Modalidad</label>
+            <select id="select-modalidad-filtro" class="entrada-control">
+              <option value="todas">Todas las modalidades</option>
+              <option value="presencial">Presencial</option>
+              <option value="virtual">Virtual</option>
+              <option value="hibrido">Híbrido</option>
+            </select>
+          </div>
+
+          <div class="campo-grupo">
+            <label for="input-fecha-inicio" class="campo-label">Fecha Desde</label>
+            <input type="date" id="input-fecha-inicio" class="entrada-control">
+          </div>
+
+          <div class="campo-grupo">
+            <label for="input-fecha-fin" class="campo-label">Fecha Hasta</label>
+            <input type="date" id="input-fecha-fin" class="entrada-control">
+          </div>
+        </div>
+
+        <!-- Pills de Categorías de Eventos -->
+        <div class="categorias-pills" role="tablist" aria-label="Filtrar por categoría">
+          <button class="pill-btn activo" data-categoria="todos" role="tab" aria-selected="true">Todos los Eventos</button>
+          <button class="pill-btn" data-categoria="rueda" role="tab" aria-selected="false">Ruedas de Negocios</button>
+          <button class="pill-btn" data-categoria="convocatoria" role="tab" aria-selected="false">Convocatorias</button>
+          <button class="pill-btn" data-categoria="taller" role="tab" aria-selected="false">Talleres y Capacitación</button>
+          <button class="pill-btn" data-categoria="conferencia" role="tab" aria-selected="false">Conferencias y Foros</button>
+        </div>
+      </section>
+
+      <!-- SECCIÓN DEL MAIN GRID/LIST DE EVENTOS -->
+      <section id="seccion-eventos-main" aria-live="polite">
+        <div id="grid-eventos-contenedor" class="grid-eventos">
+          <!-- Carga inicial por Skeletons vía JavaScript -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER INSTITUCIONAL -->
+    <footer style="background: var(--sena-navy); color: #94A3B8; border-top: 2px solid var(--sena-verde); padding: 32px 24px; font-size: 13.5px; text-align: center;">
+      <div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <p style="color: #FFFFFF; font-weight: 800;">Servicio Nacional de Aprendizaje SENA - Fondo Emprender</p>
+        <p>Sistema de Gestión de Eventos y Ruedas de Negocios · GAES-1 © 2026</p>
+        <p style="font-size: 12px; color: #64748B;">Cumplimiento de Estándares WCAG 2.1 AA para Accesibilidad Web Institucional</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- MODAL DE DETALLE DE EVENTO -->
+  <div id="modal-detalle-evento" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Detalle del Evento</h2>
+        <button onclick="cerrarModal('modal-detalle-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div id="modal-detalle-cuerpo" class="modal-body">
+        <!-- Renderizado dinámico -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE REGISTRO E INSCRIPCIÓN CON PASE DIGITAL QR -->
+  <div id="modal-registro-evento" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-registro-titulo">Inscripción al Evento</h2>
+        <button onclick="cerrarModal('modal-registro-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Formulario de Registro -->
+        <form id="form-registro-asistente" onsubmit="procesarInscripcion(event)">
+          <input type="hidden" id="input-evento-id">
+
+          <div class="campo-grupo" style="margin-bottom: 16px;">
+            <label for="reg-nombre" class="campo-label">Nombre Completo *</label>
+            <input type="text" id="reg-nombre" class="entrada-control" required placeholder="Ej: María Camila Rodriguez">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 16px;">
+            <label for="reg-documento" class="campo-label">Número de Identificación (Cédula/TI) *</label>
+            <input type="text" id="reg-documento" class="entrada-control" required placeholder="Ej: 1098765432">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 16px;">
+            <label for="reg-correo" class="campo-label">Correo Electrónico Institucional/Personal *</label>
+            <input type="email" id="reg-correo" class="entrada-control" required placeholder="ejemplo@soy.sena.edu.co">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 20px;">
+            <label for="reg-rol" class="campo-label">Perfil del Asistente *</label>
+            <select id="reg-rol" class="entrada-control" required>
+              <option value="Emprendedor SENA">Emprendedor SENA / Fondo Emprender</option>
+              <option value="Comprador / Inversionista">Comprador / Inversionista</option>
+              <option value="Aprendiz / Estudiante SENA">Aprendiz / Estudiante SENA</option>
+              <option value="Publico General">Público General</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btn-confirmar-registro" class="btn btn-primario btn-bloque">Generar Pase Digital QR</button>
+        </form>
+
+        <!-- VISTA DE PASE DIGITAL GENERADO CON CÓDIGO QR -->
+        <div id="contenedor-pase-qr" style="display: none; flex-direction: column; align-items: center;" class="ticket-contenedor">
+          <div style="background: var(--sena-verde); color: white; padding: 4px 14px; border-radius: var(--radio-full); font-size: 12px; font-weight: 700; text-transform: uppercase;">
+            Pase Confirmado SENA
+          </div>
+          
+          <h3 id="ticket-evento" style="font-size: 16px; color: var(--sena-navy); text-align: center;">-</h3>
+          <p id="ticket-nombre" style="font-size: 18px; font-weight: 800; color: var(--sena-navy);">-</p>
+          <p id="ticket-doc" style="font-size: 13px; color: var(--texto-secundario);">-</p>
+
+          <div class="qr-canvas-box">
+            <canvas id="canvas-qr-generado"></canvas>
+          </div>
+
+          <div style="display: flex; gap: 10px; width: 100%; margin-top: 12px;">
+            <button onclick="window.print()" class="btn btn-secundario btn-sm btn-bloque">Imprimir / Guardar PDF</button>
+            <button onclick="cerrarModal('modal-registro-evento')" class="btn btn-primario btn-sm btn-bloque">Finalizar</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CREACIÓN DE EVENTOS (EXCLUSIVO ADMIN & EMPRENDEDOR SENA) -->
+  <div id="modal-crear-evento" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Publicar Nuevo Evento SENA</h2>
+        <button onclick="cerrarModal('modal-crear-evento')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form onsubmit="procesarCreacionEvento(event)">
+          <div class="campo-grupo" style="margin-bottom: 14px;">
+            <label for="crear-titulo" class="campo-label">Título del Evento / Convocatoria *</label>
+            <input type="text" id="crear-titulo" class="entrada-control" required placeholder="Ej: Rueda de Negocios Agrotech SENA 2026">
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 14px;">
+            <label for="crear-categoria" class="campo-label">Categoría de Evento *</label>
+            <select id="crear-categoria" class="entrada-control" required>
+              <option value="Rueda de Negocios">Rueda de Negocios</option>
+              <option value="Convocatoria">Convocatoria de Capital Semilla</option>
+              <option value="Taller">Taller / Capacitación CANVAS</option>
+              <option value="Conferencia">Conferencia / Foro Internacional</option>
+            </select>
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 14px;">
+            <label for="crear-descripcion" class="campo-label">Descripción Detallada *</label>
+            <textarea id="crear-descripcion" class="entrada-control" rows="3" required placeholder="Explica los objetivos, perfil de participantes y beneficios del evento..."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="campo-grupo">
+              <label for="crear-modalidad" class="campo-label">Modalidad *</label>
+              <select id="crear-modalidad" class="entrada-control" required>
+                <option value="Presencial">Presencial</option>
+                <option value="Virtual">Virtual</option>
+                <option value="Híbrido">Híbrido</option>
+              </select>
+            </div>
+            <div class="campo-grupo">
+              <label for="crear-aforo" class="campo-label">Aforo Máximo (Cupos) *</label>
+              <input type="number" id="crear-aforo" class="entrada-control" required min="5" value="100" placeholder="Ej: 100">
+            </div>
+          </div>
+
+          <div class="campo-grupo" style="margin-bottom: 14px;">
+            <label for="crear-lugar" class="campo-label">Lugar / Ubicación *</label>
+            <input type="text" id="crear-lugar" class="entrada-control" required placeholder="Ej: Auditorio Central Complejo Paloquemao - Bogotá">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div class="campo-grupo">
+              <label for="crear-fecha" class="campo-label">Fecha del Evento *</label>
+              <input type="date" id="crear-fecha" class="entrada-control" required>
+            </div>
+            <div class="campo-grupo">
+              <label for="crear-hora" class="campo-label">Horario *</label>
+              <input type="text" id="crear-hora" class="entrada-control" required placeholder="Ej: 08:00 AM - 04:00 PM" value="08:00 AM - 04:00 PM">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primario btn-bloque">Publicar Evento en Calendario</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE LOGIN Y REGISTRO CON ROLES RBAC -->
+  <div id="modal-login" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-login-titulo">Acceso Institucional & Registro - Fondo Emprender</h2>
+        <button onclick="cerrarModal('modal-login')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Pestañas de Alternancia Login / Registro -->
+        <div style="display: flex; background: var(--fondo); border: 1px solid var(--borde); border-radius: var(--radio-sm); padding: 4px; margin-bottom: 20px; gap: 4px;">
+          <button id="tab-btn-login" onclick="cambiarTabLogin('login')" class="btn-vista activo" style="flex: 1; justify-content: center; padding: 8px;">
+            Iniciar Sesión
+          </button>
+          <button id="tab-btn-registro" onclick="cambiarTabLogin('registro')" class="btn-vista" style="flex: 1; justify-content: center; padding: 8px;">
+            Registrar Nuevo Usuario
+          </button>
+        </div>
+
+        <!-- FORMULARIO 1: INICIAR SESIÓN -->
+        <div id="form-login-seccion">
+          <form onsubmit="ejecutarLogin(event)">
+            <div class="campo-grupo" style="margin-bottom: 16px;">
+              <label for="login-email" class="campo-label">Correo Electrónico *</label>
+              <input type="email" id="login-email" class="entrada-control" required placeholder="ejemplo@sena.edu.co">
+            </div>
+
+            <div class="campo-grupo" style="margin-bottom: 20px;">
+              <label for="login-password" class="campo-label">Contraseña *</label>
+              <input type="password" id="login-password" class="entrada-control" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn btn-primario btn-bloque">Entrar al Sistema</button>
+          </form>
+
+          <!-- Acceso Rápido Demo por Roles -->
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
+            <p style="font-size: 11.5px; font-weight: 700; color: var(--sena-navy); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+              Acceso Rápido por Rol (Cuentas Demo):
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+              <button onclick="loginDemo('admin@sena.edu.co', 'Admin123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+                Admin (Carlos)
+              </button>
+              <button onclick="loginDemo('logistica@sena.edu.co', 'Logistica123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+                Logística (María)
+              </button>
+              <button onclick="loginDemo('emprendedor@sena.edu.co', 'Emprendedor123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+                Emprendedor (Juan)
+              </button>
+              <button onclick="loginDemo('comite@sena.edu.co', 'Comite123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
+                Comité (Dra. Elena)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMULARIO 2: REGISTRAR NUEVO USUARIO -->
+        <div id="form-registro-seccion" style="display: none;">
+          <form onsubmit="ejecutarRegistroUsuario(event)">
+            <div class="campo-grupo" style="margin-bottom: 14px;">
+              <label for="nuevo-nombre" class="campo-label">Nombre Completo *</label>
+              <input type="text" id="nuevo-nombre" class="entrada-control" required placeholder="Ej: Ana María López">
+            </div>
+
+            <div class="campo-grupo" style="margin-bottom: 14px;">
+              <label for="nuevo-documento" class="campo-label">Número de Documento (Cédula/TI) *</label>
+              <input type="text" id="nuevo-documento" class="entrada-control" required placeholder="Ej: 1025443322">
+            </div>
+
+            <div class="campo-grupo" style="margin-bottom: 14px;">
+              <label for="nuevo-email" class="campo-label">Correo Electrónico *</label>
+              <input type="email" id="nuevo-email" class="entrada-control" required placeholder="ana.lopez@sena.edu.co">
+            </div>
+
+            <div class="campo-grupo" style="margin-bottom: 14px;">
+              <label for="nuevo-password" class="campo-label">Contraseña *</label>
+              <input type="password" id="nuevo-password" class="entrada-control" required placeholder="••••••••">
+            </div>
+
+            <div class="campo-grupo" style="margin-bottom: 20px;">
+              <label for="nuevo-rol" class="campo-label">Asignar Rol en la Plataforma *</label>
+              <select id="nuevo-rol" class="entrada-control" required style="font-weight: 600;">
+                <option value="Emprendedor SENA">Emprendedor SENA / Fondo Emprender</option>
+                <option value="Comprador / Inversionista">Comprador / Inversionista</option>
+                <option value="Comité Evaluador">Comité Evaluador de Eventos</option>
+                <option value="Operador de Logística">Operador de Logística (Control Aforo)</option>
+                <option value="Administrador">Administrador de Sistema</option>
+                <option value="Aprendiz / Público General">Aprendiz / Público General</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primario btn-bloque">Crear Cuenta e Iniciar Sesión</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS MODULARES JS -->
+  <script src="js/api.js"></script>
+  <script src="js/calendar.js"></script>
+</body>
+</html>
