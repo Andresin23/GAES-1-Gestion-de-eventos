@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: eventos_sena_db
+    environment:
+      POSTGRES_USER: eventos
+      POSTGRES_PASSWORD: eventos
+      POSTGRES_DB: eventos_sena
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventos -d eventos_sena"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mail:
+    image: mailhog/mailhog:v1.0.1
+    container_name: eventos_sena_mail
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eventos_sena_api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgresql://eventos:eventos@db:5432/eventos_sena?schema=public
+      JWT_SECRET: cambiar_en_produccion_jwt_secret
+      JWT_REFRESH_SECRET: cambiar_en_produccion_refresh_secret
+      SMTP_HOST: mail
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      APP_URL: http://localhost:3000
+      TZ: America/Bogota
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

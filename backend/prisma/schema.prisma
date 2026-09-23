@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  COMITE
+  OPERADOR
+  COMPRADOR
+  PROVEEDOR
+  ASISTENTE
+}
+
+enum AccountStatus {
+  ACTIVO
+  SUSPENDIDO
+  ELIMINADO
+}
+
+enum EventStatus {
+  BORRADOR
+  APROBADO
+  PUBLICADO
+  CANCELADO
+}
+
+enum Modality {
+  PRESENCIAL
+  VIRTUAL
+  HIBRIDO
+}
+
+enum RegistrationStatus {
+  INSCRITO
+  LISTA_ESPERA
+  ASISTIO
+  CANCELADO
+}
+
+enum AppointmentStatus {
+  SOLICITUD
+  CONFIRMADA
+  RECHAZADA
+  CANCELADA
+}
+
+enum EmailStatus {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+}
+
+model User {
+  id                   String        @id @default(cuid())
+  documentNumber       String        @unique
+  documentType         String        @default("CC")
+  email                String        @unique
+  passwordHash         String
+  firstName            String
+  lastName             String
+  phone                String?
+  birthDate            DateTime?
+  dataPolicyAcceptedAt DateTime?
+  emailVerifiedAt      DateTime?
+  emailOtp             String?
+  emailOtpExpiresAt    DateTime?
+  verificationToken    String?       @unique
+  resetToken           String?       @unique
+  resetTokenExpiresAt  DateTime?
+  failedLoginAttempts  Int           @default(0)
+  lockedUntil          DateTime?
+  lastLoginAt          DateTime?
+  mfaSecret            String?
+  mfaEnabled           Boolean       @default(false)
+  activeRole           Role          @default(ASISTENTE)
+  status               AccountStatus @default(ACTIVO)
+  anonymizedAt         DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  roles            UserRole[]
+  refreshTokens    RefreshToken[]
+  accessLogs       AccessLog[]
+  registrations    Registration[]
+  buyerProfile     BuyerProfile?
+  providerProfile  ProviderProfile?
+  appointmentsB    Appointment[]      @relation("CompradorCitas")
+  appointmentsP    Appointment[]      @relation("ProveedorCitas")
+  operatorAssigns  OperatorAssignment[]
+  emailOutbox      EmailOutbox[]
+  auditLogs        AuditLog[]
+  reportExports    ReportExport[]
+  eventCreated     Event[]            @relation("EventoCreador")
+  eventApprovedBy  Event[]            @relation("EventoAprobador")
+  eventPublishedBy Event[]            @relation("EventoPublicador")
+  eventCancelledBy Event[]            @relation("EventoCancelador")
+  checkInsDone     Registration[]     @relation("CheckInOperador")
+}
+
+model UserRole {
+  userId String
+  role   Role
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, role])
+}
+
+model AccessLog {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  slug   String  @unique
+  events Event[]
+}
+
+model Event {
+  id                   String        @id @default(cuid())
+  name                 String
+  description          String
+  categoryId           String
+  modality             Modality
+  date                 DateTime
+  timeText             String
+  location             String
+  status               EventStatus   @default(BORRADOR)
+  budgetEstimateCOP    Int?
+  visibilityStart      DateTime?
+  visibilityEnd        DateTime?
+  cancellationReason   String?
+  reviewComment        String?
+  businessRoundEnabled Boolean       @default(false)
+  appointmentDurationMin Int         @default(30)
+  maxAppointmentsPerDay Int         @default(5)
+  coverImageUrl        String?
+  createdById          String
+  approvedById         String?
+  publishedById        String?
+  cancelledById        String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  category      Category              @relation(fields: [categoryId], references: [id])
+  createdBy     User                  @relation("EventoCreador", fields: [createdById], references: [id])
+  approvedBy    User?                 @relation("EventoAprobador", fields: [approvedById], references: [id])
+  publishedBy   User?                 @relation("EventoPublicador", fields: [publishedById], references: [id])
+  cancelledBy   User?                 @relation("EventoCancelador", fields: [cancelledById], references: [id])
+  subEvents     SubEvent[]
+  operators     OperatorAssignment[]
+  appointments  Appointment[]
+
+  @@index([status, visibilityStart, visibilityEnd])
+  @@index([date])
+}
+
+model SubEvent {
+  id                   String           @id @default(cuid())
+  eventId              String
+  name                 String
+  description          String?
+  date                 DateTime
+  startTime            DateTime
+  endTime              DateTime
+  modality             Modality
+  location             String?
+  capacity             Int
+  registrationDeadline DateTime
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  event         Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+  operators     OperatorAssignment[]
+
+  @@index([eventId, date])
+}
+
+model Registration {
+  id                String             @id @default(cuid())
+  userId            String?
+  subEventId        String
+  status            RegistrationStatus @default(INSCRITO)
+  qrCode            String             @unique
+  isGuest           Boolean            @default(false)
+  guestName         String?
+  guestDocument     String?
+  waitlistPos       Int?
+  checkedInAt       DateTime?
+  checkedInById     String?
+  cancelReason      String?
+  reminder24SentAt  DateTime?
+  reminder1hSentAt  DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subEvent    SubEvent @relation(fields: [subEventId], references: [id], onDelete: Cascade)
+  checkedInBy User?    @relation("CheckInOperador", fields: [checkedInById], references: [id])
+
+  @@unique([userId, subEventId])
+  @@index([subEventId, status])
+  @@index([qrCode])
+}
+
+model OperatorAssignment {
+  id         String   @id @default(cuid())
+  operatorId String
+  eventId    String
+  subEventId String?
+  createdAt  DateTime @default(now())
+
+  operator User     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subEvent SubEvent? @relation(fields: [subEventId], references: [id], onDelete: Cascade)
+
+  @@unique([operatorId, eventId, subEventId])
+}
+
+model BuyerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  nit            String   @unique
+  companyName    String
+  economicSector String
+  website        String?
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProviderProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  ventureName      String
+  economicSector   String
+  description       String?
+  portfolioPdfUrl  String?
+  socialLinks      String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  eventId      String
+  buyerId      String
+  providerId   String
+  startAt      DateTime
+  endAt        DateTime
+  status       AppointmentStatus @default(SOLICITUD)
+  tableNumber  String?
+  meetingUrl   String?
+  rating       Int?
+  comment      String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  buyer    User  @relation("CompradorCitas", fields: [buyerId], references: [id], onDelete: Cascade)
+  provider User  @relation("ProveedorCitas", fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, startAt])
+  @@index([buyerId, startAt])
+  @@index([providerId, startAt])
+}
+
+model EmailOutbox {
+  id            String      @id @default(cuid())
+  to            String
+  subject       String
+  template      String
+  payload       Json
+  status        EmailStatus @default(PENDIENTE)
+  attempts      Int         @default(0)
+  lastError     String?
+  nextAttemptAt DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  sentAt        DateTime?
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([status, nextAttemptAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entity     String
+  entityId   String
+  detail     Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+}
+
+model ReportExport {
+  id         String    @id @default(cuid())
+  userId     String
+  type       String
+  filters    Json?
+  filePath   String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
