@@ -4,6 +4,11 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
 import { AppError } from './shared/errors.js';
+import { routerAuth } from './modules/auth/auth.routes.js';
+import { routerUsuarios } from './modules/users/users.routes.js';
+import { routerEventos } from './modules/events/events.routes.js';
+import { routerInscripciones } from './modules/registrations/registrations.routes.js';
+import { routerAforo } from './modules/aforo/aforo.routes.js';
 
 export function crearApp(): Express {
   const app = express();
@@ -26,6 +31,12 @@ export function crearApp(): Express {
   app.get('/api/v1/health', (_req: Request, res: Response) => {
     res.json({ ok: true, servicio: 'eventos-sena-api', version: '1.0.0' });
   });
+
+  app.use('/api/auth', routerAuth);
+  app.use('/api/usuarios', routerUsuarios);
+  app.use('/api/eventos', routerEventos);
+  app.use('/api/inscripciones', routerInscripciones);
+  app.use('/api/aforo', routerAforo);
 
   app.use((_req: Request, res: Response) => {
     res.status(404).json({ mensaje: 'Ruta no encontrada.', errores: [] });

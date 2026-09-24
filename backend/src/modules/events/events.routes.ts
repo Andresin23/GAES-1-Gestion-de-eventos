@@ -3,6 +3,7 @@ import { Router, type Request, Response } from 'express';
 import { validar } from '../../middlewares/validate.js';
 import { authRequerido, requireRole } from '../../middlewares/auth.js';
 import { prisma } from '../../config/db.js';
+import { paramTexto } from '../../shared/types.js';
 import * as servicio from './events.service.js';
 
 const modalidad = z.enum(['PRESENCIAL', 'VIRTUAL', 'HIBRIDO']);
@@ -152,7 +153,7 @@ async function prismaFindOperador(operadorId: string) {
 }
 
 routerEventos.get('/:id', authRequerido, requireRole('ADMIN', 'COMITE', 'OPERADOR', 'COMPRADOR', 'PROVEEDOR', 'ASISTENTE'), validar(esquemaId, 'params'), async (req: Request, res: Response) => {
-  const evento = await servicio.obtenerEvento(req.params.id);
+  const evento = await servicio.obtenerEvento(paramTexto(req));
   res.json({ ok: true, evento });
 });
 
@@ -162,57 +163,57 @@ routerEventos.post('/', authRequerido, requireRole('ADMIN'), validar(esquemaCrea
 });
 
 routerEventos.patch('/:id', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), validar(esquemaEditarEvento), async (req: Request, res: Response) => {
-  const evento = await servicio.editarEvento(req.params.id, req.body, contexto(req));
+  const evento = await servicio.editarEvento(paramTexto(req), req.body, contexto(req));
   res.json({ ok: true, mensaje: 'Evento actualizado.', evento });
 });
 
 routerEventos.post('/:id/revision', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), async (req: Request, res: Response) => {
-  const resultado = await servicio.enviarARevision(req.params.id, contexto(req));
+  const resultado = await servicio.enviarARevision(paramTexto(req), contexto(req));
   res.json(resultado);
 });
 
 routerEventos.post('/:id/aprobar', authRequerido, requireRole('COMITE'), validar(esquemaId, 'params'), async (req: Request, res: Response) => {
-  await servicio.aprobarEvento(req.params.id, contexto(req));
+  await servicio.aprobarEvento(paramTexto(req), contexto(req));
   res.json({ ok: true, mensaje: 'Evento aprobado por el Comité.' });
 });
 
 routerEventos.post('/:id/devolver', authRequerido, requireRole('COMITE'), validar(esquemaId, 'params'), validar(esquemaDevolver), async (req: Request, res: Response) => {
-  await servicio.devolverEvento(req.params.id, req.body, contexto(req));
+  await servicio.devolverEvento(paramTexto(req), req.body, contexto(req));
   res.json({ ok: true, mensaje: 'Evento devuelto a Borrador.' });
 });
 
 routerEventos.post('/:id/publicar', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), validar(esquemaPublicar), async (req: Request, res: Response) => {
-  const resultado = await servicio.publicarEvento(req.params.id, req.body, contexto(req));
+  const resultado = await servicio.publicarEvento(paramTexto(req), req.body, contexto(req));
   res.json(resultado);
 });
 
 routerEventos.post('/:id/cancelar', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), validar(esquemaCancelar), async (req: Request, res: Response) => {
-  const resultado = await servicio.cancelarEvento(req.params.id, req.body, contexto(req));
+  const resultado = await servicio.cancelarEvento(paramTexto(req), req.body, contexto(req));
   res.json(resultado);
 });
 
 routerEventos.post('/:id/duplicar', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), async (req: Request, res: Response) => {
-  const copia = await servicio.duplicarEvento(req.params.id, contexto(req));
+  const copia = await servicio.duplicarEvento(paramTexto(req), contexto(req));
   res.status(201).json({ ok: true, mensaje: 'Evento duplicado en Borrador.', evento: copia });
 });
 
 routerEventos.post('/:id/sub-eventos', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), validar(esquemaSubEvento), async (req: Request, res: Response) => {
-  const sub = await servicio.crearSubEvento(req.params.id, req.body, contexto(req));
+  const sub = await servicio.crearSubEvento(paramTexto(req), req.body, contexto(req));
   res.status(201).json({ ok: true, mensaje: 'Sub-evento creado.', subEvento: sub });
 });
 
 routerEventos.patch('/:id/sub-eventos/:subEventoId', authRequerido, requireRole('ADMIN'), validar(esquemaSubEventoId, 'params'), validar(esquemaEditarSubEvento), async (req: Request, res: Response) => {
-  const sub = await servicio.editarSubEvento(req.params.id, req.params.subEventoId, req.body, contexto(req));
+  const sub = await servicio.editarSubEvento(paramTexto(req), paramTexto(req, 'subEventoId'), req.body, contexto(req));
   res.json({ ok: true, mensaje: 'Sub-evento actualizado.', subEvento: sub });
 });
 
 routerEventos.post('/:id/operadores', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), validar(esquemaOperador), async (req: Request, res: Response) => {
-  const resultado = await servicio.asignarOperador(req.params.id, req.body.operadorId, contexto(req));
+  const resultado = await servicio.asignarOperador(paramTexto(req), req.body.operadorId, contexto(req));
   res.json({ ok: true, mensaje: 'Operador asignado.', asignaciones: resultado });
 });
 
 routerEventos.delete('/:id/operadores', authRequerido, requireRole('ADMIN'), validar(esquemaId, 'params'), validar(esquemaOperador), async (req: Request, res: Response) => {
-  const resultado = await servicio.eliminarOperador(req.params.id, req.body.operadorId, contexto(req));
+  const resultado = await servicio.eliminarOperador(paramTexto(req), req.body.operadorId, contexto(req));
   res.json({ ...resultado, mensaje: 'Operador eliminado del evento.' });
 });
 

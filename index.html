@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calendario Público de Eventos - Fondo Emprender SENA</title>
   <meta name="description" content="Plataforma de gestión de eventos, convocatorias y ruedas de negocios del Fondo Emprender del SENA.">
-  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="stylesheet" href="css/styles.css?v=3.2">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="layout">
@@ -29,7 +30,7 @@
           <a href="control-aforo.html" class="nav-link">
             Control de Aforo (Puerta)
           </a>
-          <a href="index.html#login" class="nav-link">
+          <a href="login.html" class="nav-link">
             Acceso Institucional
           </a>
         </nav>
@@ -289,96 +290,49 @@
   <div id="modal-login" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="modal-login-titulo">Acceso Institucional & Registro - Fondo Emprender</h2>
+        <h2 id="modal-login-titulo">Iniciar sesión con Google</h2>
         <button onclick="cerrarModal('modal-login')" class="btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body">
         
-        <!-- Pestañas de Alternancia Login / Registro -->
-        <div style="display: flex; background: var(--fondo); border: 1px solid var(--borde); border-radius: var(--radio-sm); padding: 4px; margin-bottom: 20px; gap: 4px;">
-          <button id="tab-btn-login" onclick="cambiarTabLogin('login')" class="btn-vista activo" style="flex: 1; justify-content: center; padding: 8px;">
-            Iniciar Sesión
-          </button>
-          <button id="tab-btn-registro" onclick="cambiarTabLogin('registro')" class="btn-vista" style="flex: 1; justify-content: center; padding: 8px;">
-            Registrar Nuevo Usuario
-          </button>
+        <div id="pantalla-google">
+          <p class="google-auth-ayuda">
+            Usa el correo con el que participas en Fondo Emprender. Si es tu primera vez, te pediremos documento y rol.
+          </p>
+          <div id="google-btn" class="google-btn-wrap"></div>
         </div>
 
-        <!-- FORMULARIO 1: INICIAR SESIÓN -->
-        <div id="form-login-seccion">
-          <form onsubmit="ejecutarLogin(event)">
-            <div class="campo-grupo" style="margin-bottom: 16px;">
-              <label for="login-email" class="campo-label">Correo Electrónico *</label>
-              <input type="email" id="login-email" class="entrada-control" required placeholder="ejemplo@sena.edu.co">
+        <div id="pantalla-perfil-google" class="perfil-google" style="display: none;">
+          <p class="google-auth-ayuda">
+            Google confirmó tu correo. Completa estos datos para crear tu cuenta.
+          </p>
+          <form onsubmit="completarPerfilGoogle(event)">
+            <div class="campo-grupo" style="margin-bottom: 12px;">
+              <label for="perfil-nombre" class="campo-label">Nombre</label>
+              <input type="text" id="perfil-nombre" class="entrada-control" readonly>
             </div>
-
+            <div class="campo-grupo" style="margin-bottom: 12px;">
+              <label for="perfil-email" class="campo-label">Correo de Google</label>
+              <input type="email" id="perfil-email" class="entrada-control" readonly>
+            </div>
+            <div class="campo-grupo" style="margin-bottom: 12px;">
+              <label for="perfil-documento" class="campo-label">Número de Documento (Cédula/TI) *</label>
+              <input type="text" id="perfil-documento" class="entrada-control" required placeholder="Ej: 1025443322" autocomplete="off">
+            </div>
             <div class="campo-grupo" style="margin-bottom: 20px;">
-              <label for="login-password" class="campo-label">Contraseña *</label>
-              <input type="password" id="login-password" class="entrada-control" required placeholder="••••••••">
-            </div>
-
-            <button type="submit" class="btn btn-primario btn-bloque">Entrar al Sistema</button>
-          </form>
-
-          <!-- Acceso Rápido Demo por Roles -->
-          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
-            <p style="font-size: 11.5px; font-weight: 700; color: var(--sena-navy); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
-              Acceso Rápido por Rol (Cuentas Demo):
-            </p>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-              <button onclick="loginDemo('admin@sena.edu.co', 'Admin123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
-                Admin (Carlos)
-              </button>
-              <button onclick="loginDemo('logistica@sena.edu.co', 'Logistica123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
-                Logística (María)
-              </button>
-              <button onclick="loginDemo('emprendedor@sena.edu.co', 'Emprendedor123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
-                Emprendedor (Juan)
-              </button>
-              <button onclick="loginDemo('comite@sena.edu.co', 'Comite123!')" class="btn btn-secundario btn-sm" style="text-align: left; justify-content: flex-start; font-size: 12px;">
-                Comité (Dra. Elena)
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- FORMULARIO 2: REGISTRAR NUEVO USUARIO -->
-        <div id="form-registro-seccion" style="display: none;">
-          <form onsubmit="ejecutarRegistroUsuario(event)">
-            <div class="campo-grupo" style="margin-bottom: 14px;">
-              <label for="nuevo-nombre" class="campo-label">Nombre Completo *</label>
-              <input type="text" id="nuevo-nombre" class="entrada-control" required placeholder="Ej: Ana María López">
-            </div>
-
-            <div class="campo-grupo" style="margin-bottom: 14px;">
-              <label for="nuevo-documento" class="campo-label">Número de Documento (Cédula/TI) *</label>
-              <input type="text" id="nuevo-documento" class="entrada-control" required placeholder="Ej: 1025443322">
-            </div>
-
-            <div class="campo-grupo" style="margin-bottom: 14px;">
-              <label for="nuevo-email" class="campo-label">Correo Electrónico *</label>
-              <input type="email" id="nuevo-email" class="entrada-control" required placeholder="ana.lopez@sena.edu.co">
-            </div>
-
-            <div class="campo-grupo" style="margin-bottom: 14px;">
-              <label for="nuevo-password" class="campo-label">Contraseña *</label>
-              <input type="password" id="nuevo-password" class="entrada-control" required placeholder="••••••••">
-            </div>
-
-            <div class="campo-grupo" style="margin-bottom: 20px;">
-              <label for="nuevo-rol" class="campo-label">Asignar Rol en la Plataforma *</label>
-              <select id="nuevo-rol" class="entrada-control" required style="font-weight: 600;">
+              <label for="perfil-rol" class="campo-label">Seleccionar Rol *</label>
+              <select id="perfil-rol" class="entrada-control" required style="font-weight: 700;">
+                <option value="Visor Público / Asistente">Visor Público / Asistente</option>
                 <option value="Emprendedor SENA">Emprendedor SENA / Fondo Emprender</option>
                 <option value="Comprador / Inversionista">Comprador / Inversionista</option>
                 <option value="Comité Evaluador">Comité Evaluador de Eventos</option>
-                <option value="Operador de Logística">Operador de Logística (Control Aforo)</option>
+                <option value="Operador de Logística">Operador de Logística (Control de Aforo)</option>
                 <option value="Administrador">Administrador de Sistema</option>
-                <option value="Aprendiz / Público General">Aprendiz / Público General</option>
               </select>
             </div>
-
-            <button type="submit" class="btn btn-primario btn-bloque">Crear Cuenta e Iniciar Sesión</button>
+            <button type="submit" class="btn btn-primario btn-bloque">Crear cuenta e ingresar</button>
+            <button type="button" onclick="cancelarPerfilGoogle()" class="btn-visor">Usar otra cuenta de Google</button>
           </form>
         </div>
 
@@ -387,7 +341,9 @@
   </div>
 
   <!-- SCRIPTS MODULARES JS -->
-  <script src="js/api.js"></script>
-  <script src="js/calendar.js"></script>
+  <script src="js/config.js?v=3.2"></script>
+  <script src="js/api.js?v=3.2"></script>
+  <script src="js/google-auth.js?v=3.2"></script>
+  <script src="js/calendar.js?v=3.2"></script>
 </body>
 </html>

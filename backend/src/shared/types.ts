@@ -1,4 +1,5 @@
 import type { Role, User } from '@prisma/client';
+import type { Request } from 'express';
 
 export type TokenCargos = {
   sub: string;
@@ -23,6 +24,12 @@ declare global {
       ip?: string;
     }
   }
+}
+
+/** Lee un parámetro de ruta ya validado por zod, normalizado a string (tipos de Express 5). */
+export function paramTexto(req: Request, nombre = 'id'): string {
+  const valor = req.params[nombre];
+  return Array.isArray(valor) ? (valor[0] ?? '') : valor;
 }
 
 export function serializarUsuario(u: User): Record<string, unknown> {

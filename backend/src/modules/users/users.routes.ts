@@ -3,7 +3,7 @@ import { Router, type Request, Response } from 'express';
 import { validar } from '../../middlewares/validate.js';
 import { authRequerido, requireRole } from '../../middlewares/auth.js';
 import * as servicio from './users.service.js';
-import { serializarUsuario } from '../../shared/types.js';
+import { serializarUsuario, paramTexto } from '../../shared/types.js';
 
 const rol = z.enum(['ADMIN', 'COMITE', 'OPERADOR', 'COMPRADOR', 'PROVEEDOR', 'ASISTENTE']);
 
@@ -91,7 +91,7 @@ routerUsuarios.get(
   requireRole('ADMIN'),
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
-    const resultado = await servicio.obtenerUsuario(req.params.id);
+    const resultado = await servicio.obtenerUsuario(paramTexto(req));
     res.json({ ok: true, usuario: resultado });
   }
 );
@@ -114,7 +114,7 @@ routerUsuarios.patch(
   validar(esquemaEditar),
   async (req: Request, res: Response) => {
     if (!req.auth) return;
-    const resultado = await servicio.editarUsuarioAdmin(req.params.id, { ...req.body, editorId: req.auth.id });
+    const resultado = await servicio.editarUsuarioAdmin(paramTexto(req), { ...req.body, editorId: req.auth.id });
     res.json({ ok: true, mensaje: 'Usuario actualizado.', usuario: resultado });
   }
 );
@@ -125,7 +125,7 @@ routerUsuarios.post(
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
     if (!req.auth) return;
-    const resultado = await servicio.suspenderUsuario(req.params.id, req.auth.id);
+    const resultado = await servicio.suspenderUsuario(paramTexto(req), req.auth.id);
     res.json({ ...resultado, mensaje: 'Usuario suspendido.' });
   }
 );
@@ -136,7 +136,7 @@ routerUsuarios.post(
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
     if (!req.auth) return;
-    const resultado = await servicio.activarUsuario(req.params.id, req.auth.id);
+    const resultado = await servicio.activarUsuario(paramTexto(req), req.auth.id);
     res.json({ ...resultado, mensaje: 'Usuario reactivado.' });
   }
 );
@@ -147,7 +147,7 @@ routerUsuarios.delete(
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
     if (!req.auth) return;
-    const resultado = await servicio.eliminarCuentaAdmin(req.params.id, req.auth.id);
+    const resultado = await servicio.eliminarCuentaAdmin(paramTexto(req), req.auth.id);
     res.json({ ...resultado, mensaje: 'Cuenta eliminada y datos anonimizados.' });
   }
 );

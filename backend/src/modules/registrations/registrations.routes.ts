@@ -4,8 +4,8 @@ import multer from 'multer';
 import { validar } from '../../middlewares/validate.js';
 import { authRequerido, requireRole } from '../../middlewares/auth.js';
 import { BadRequestError } from '../../shared/errors.js';
+import { paramTexto } from '../../shared/types.js';
 import * as servicio from './registrations.service.js';
-import { prisma } from '../../config/db.js';
 
 const esquemaId = z.object({ id: z.string().min(1) });
 
@@ -29,7 +29,7 @@ routerInscripciones.get(
   requireRole('OPERADOR', 'ADMIN', 'COMITE'),
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
-    const inscritos = await servicio.listarInscritosSubEvento(req.params.id);
+    const inscritos = await servicio.listarInscritosSubEvento(paramTexto(req));
     res.json({ ok: true, inscritos, total: inscritos.length });
   }
 );
@@ -39,7 +39,7 @@ routerInscripciones.post(
   authRequerido,
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
-    const resultado = await servicio.inscribirseSubEvento(req.auth!.id, req.params.id);
+    const resultado = await servicio.inscribirseSubEvento(req.auth!.id, paramTexto(req));
     res.status(201).json(resultado);
   }
 );
@@ -49,7 +49,7 @@ routerInscripciones.delete(
   authRequerido,
   validar(esquemaId, 'params'),
   async (req: Request, res: Response) => {
-    const resultado = await servicio.cancelarMiInscripcion(req.auth!.id, req.params.id);
+    const resultado = await servicio.cancelarMiInscripcion(req.auth!.id, paramTexto(req));
     res.json(resultado);
   }
 );
@@ -63,7 +63,7 @@ routerInscripciones.post(
     z.object({ nombre: z.string().min(2), documento: z.string().min(5), correo: z.string().email().optional() })
   ),
   async (req: Request, res: Response) => {
-    const resultado = await servicio.inscribirInvitadoEspecial(req.params.id, req.body, req.auth!.id);
+    const resultado = await servicio.inscribirInvitadoEspecial(paramTexto(req), req.body, req.auth!.id);
     res.status(201).json(resultado);
   }
 );
@@ -76,7 +76,7 @@ routerInscripciones.post(
   cargaArchivo.single('archivo'),
   async (req: Request, res: Response) => {
     if (!req.file) throw new BadRequestError('Adjunta un archivo CSV.');
-    const resultado = await servicio.preinscripcionCSV(req.params.id, req.file.buffer, req.auth!.id);
+    const resultado = await servicio.preinscripcionCSV(paramTexto(req), req.file.buffer, req.auth!.id);
     res.status(201).json(resultado);
   }
 );
@@ -85,9 +85,3 @@ routerInscripciones.get('/mis-inscripciones', authRequerido, async (req: Request
   const resultado = await servicio.listarMisInscripciones(req.auth!.id);
   res.json({ ok: true, inscripciones: resultado });
 });
-
-async function ocupacionSub() {
-  const { prisma: p } = { prisma };
-  return p;
-}
-void ocupacionSub;

@@ -1147,6 +1147,7 @@ body.login-body {
 }
 
 .login-form-side {
+  background: #FFFFFF;
   padding: 44px 40px;
   display: flex;
   flex-direction: column;
@@ -1207,12 +1208,12 @@ body.login-body {
 
 .btn-visor {
   background: transparent;
-  border: 1.5px dashed #CBD5E1;
-  color: var(--texto-secundario);
+  border: 1px solid #DADCE0;
+  color: #3C4043;
   width: 100%;
   padding: 12px;
-  border-radius: var(--radio-sm);
-  font-weight: 700;
+  border-radius: 4px;
+  font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -1224,9 +1225,85 @@ body.login-body {
 }
 
 .btn-visor:hover {
-  border-color: var(--sena-navy);
+  border-color: #3C4043;
+  color: #202124;
+  background: #F8F9FA;
+}
+
+.google-auth-ayuda {
+  font-size: 13px;
+  color: var(--texto-secundario);
+  text-align: center;
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.google-btn-wrap {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.google-btn-wrap .nsm7Bb-HzV7m-LgbsSe {
+  background: #FFFFFF !important;
+  border: 1px solid #DADCE0 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15) !important;
+}
+
+.google-btn-wrap .nsm7Bb-HzV7m-LgbsSe-BPrWId {
+  color: #3C4043 !important;
+  font-weight: 500 !important;
+}
+
+.google-btn-wrap .nsm7Bb-HzV7m-LgbsSe:hover {
+  background: #F8F9FA !important;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15) !important;
+}
+
+.btn-google {
+  width: 100%;
+  max-width: 400px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  border-radius: 4px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+}
+
+.btn-google-logo {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.google-config-aviso {
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--sena-navy);
+  background: #FFF7ED;
+  border: 1px solid #FDBA74;
+  border-radius: var(--radio-sm);
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.perfil-google .entrada-control[readonly] {
   background: var(--fondo);
+  color: var(--texto-secundario);
 }
 
 @media (max-width: 868px) {

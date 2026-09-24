@@ -7,6 +7,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   inicializarCalendario();
+  if (window.location.hash === '#login') abrirModalLogin();
 });
 
 let estadoCalendario = {
@@ -411,80 +412,13 @@ function cerrarModal(modalId) {
 
 function abrirModalLogin() {
   const modal = document.getElementById('modal-login');
-  if (modal) {
-    cambiarTabLogin('login');
-    modal.classList.add('activo');
-  }
-}
-
-function cambiarTabLogin(tab) {
-  const btnLogin = document.getElementById('tab-btn-login');
-  const btnRegistro = document.getElementById('tab-btn-registro');
-  const secLogin = document.getElementById('form-login-seccion');
-  const secRegistro = document.getElementById('form-registro-seccion');
-
-  if (tab === 'login') {
-    if (btnLogin) btnLogin.classList.add('activo');
-    if (btnRegistro) btnRegistro.classList.remove('activo');
-    if (secLogin) secLogin.style.display = 'block';
-    if (secRegistro) secRegistro.style.display = 'none';
-  } else {
-    if (btnRegistro) btnRegistro.classList.add('activo');
-    if (btnLogin) btnLogin.classList.remove('activo');
-    if (secRegistro) secRegistro.style.display = 'block';
-    if (secLogin) secLogin.style.display = 'none';
-  }
-}
-
-async function ejecutarLogin(event) {
-  if (event) event.preventDefault();
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-
-  try {
-    const respuesta = await peticionAPI('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-
-    if (respuesta.ok && respuesta.datos) {
-      mostrarToast(`Bienvenido(a) ${respuesta.datos.usuario.nombre}. Rol: ${respuesta.datos.usuario.rol}`, 'exito');
-      cerrarModal('modal-login');
-      actualizarBarraUsuarioHeader();
-    }
-  } catch (err) {
-    mostrarToast(err.message || 'Error de inicio de sesión.', 'error');
-  }
-}
-
-function loginDemo(email, password) {
-  document.getElementById('login-email').value = email;
-  document.getElementById('login-password').value = password;
-  ejecutarLogin(null);
-}
-
-async function ejecutarRegistroUsuario(event) {
-  if (event) event.preventDefault();
-  const nombre = document.getElementById('nuevo-nombre').value;
-  const documento = document.getElementById('nuevo-documento').value;
-  const email = document.getElementById('nuevo-email').value;
-  const password = document.getElementById('nuevo-password').value;
-  const rol = document.getElementById('nuevo-rol').value;
-
-  try {
-    const respuesta = await peticionAPI('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ nombre, documento, email, password, rol })
-    });
-
-    if (respuesta.ok && respuesta.datos) {
-      mostrarToast(`Registro exitoso. Sesión iniciada como ${nombre} [${rol}].`, 'exito');
-      cerrarModal('modal-login');
-      actualizarBarraUsuarioHeader();
-    }
-  } catch (err) {
-    mostrarToast(err.message || 'Error al registrar el usuario.', 'error');
-  }
+  if (!modal) return;
+  const acceso = document.getElementById('pantalla-google');
+  const perfil = document.getElementById('pantalla-perfil-google');
+  if (acceso) acceso.style.display = 'block';
+  if (perfil) perfil.style.display = 'none';
+  modal.classList.add('activo');
+  if (typeof montarBotonGoogle === 'function') montarBotonGoogle('google-btn');
 }
 
 // ============================================================================

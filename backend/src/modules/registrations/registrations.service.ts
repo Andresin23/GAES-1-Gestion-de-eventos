@@ -1,4 +1,5 @@
 import { parse } from 'csv-parse/sync';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../../config/db.js';
 import {
   BadRequestError,
@@ -49,7 +50,7 @@ async function validarSubEventoInscribible(subEventoId: string) {
   return sub;
 }
 
-async function crearRegistroConQR(
+export async function crearRegistroConQR(
   subEventoId: string,
   datos: { userId?: string; isGuest?: boolean; guestName?: string; guestDocument?: string; waitlistPos?: number },
   tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>
@@ -62,18 +63,18 @@ async function crearRegistroConQR(
     existe = await tx.registration.findUnique({ where: { qrCode } });
   }
 
-  await tx.registration.create({
-    data: {
-      subEventId,
-      userId: datos.userId,
-      isGuest: datos.isGuest ?? false,
-      guestName: datos.guestName,
-      guestDocument: datos.guestDocument,
-      waitlistPos: datos.waitlistPos,
-      qrCode,
-      status: datos.waitlistPos !== undefined ? 'LISTA_ESPERA' : 'INSCRITO'
-    }
-  });
+  const datosCreacion: Prisma.RegistrationUncheckedCreateInput = {
+    subEventId: subEventoId,
+    userId: datos.userId ?? null,
+    isGuest: datos.isGuest ?? false,
+    guestName: datos.guestName,
+    guestDocument: datos.guestDocument,
+    waitlistPos: datos.waitlistPos,
+    qrCode,
+    status: datos.waitlistPos !== undefined ? 'LISTA_ESPERA' : 'INSCRITO'
+  };
+
+  await tx.registration.create({ data: datosCreacion });
 
   return qrCode;
 }
@@ -172,7 +173,7 @@ export async function inscribirInvitadoEspecial(
 
 export async function cancelarMiInscripcion(userId: string, subEventoId: string) {
   const reg = await prisma.registration.findUnique({
-    where: { userId_subEventId: { userId, subEventId } },
+    where: { userId_subEventId: { userId, subEventId: subEventoId } },
     include: { subEvent: true }
   });
   if (!reg) throw new NotFoundError('No tienes una inscripción a ese sub-evento.');
@@ -197,7 +198,7 @@ export async function cancelarMiInscripcion(userId: string, subEventoId: string)
     if (liberoPrimera) {
       // RF-35: el cupo pasa a la primera persona de la lista de espera.
       const primeroEnEspera = await tx.registration.findFirst({
-        where: { subEventId, status: 'LISTA_ESPERA' },
+        where: { subEventId: subEventoId, status: 'LISTA_ESPERA' },
         orderBy: { waitlistPos: 'asc' }
       });
       if (primeroEnEspera) {

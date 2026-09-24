@@ -548,7 +548,7 @@ function actualizarBarraUsuarioHeader() {
     const u = sesion.usuario;
     const iniciales = u.nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-    const linkAcceso = document.querySelector('a[href="index.html#login"]');
+    const linkAcceso = document.querySelector('a.nav-link[href="login.html"]');
     if (linkAcceso) linkAcceso.style.display = 'none';
 
     // Botón especial para crear eventos si el rol lo permite (Administrador o Emprendedor SENA)

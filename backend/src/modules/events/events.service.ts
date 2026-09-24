@@ -444,6 +444,7 @@ export async function cancelarEvento(
     include: { user: { select: { email: true } } }
   });
   for (const inscrito of inscritos) {
+    if (!inscrito.user?.email) continue;
     await encolarCorreo({
       to: inscrito.user.email,
       subject: 'Evento cancelado - Fondo Emprender SENA',
