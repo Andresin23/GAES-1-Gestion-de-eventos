@@ -247,3 +247,16 @@ function simularEscaneoQR(codigoEspecial = null) {
   mostrarToast(`[Escáner QR] Detectado código: ${codigoAEscanear}`, 'exito');
   procesarValidacionEntrada(codigoAEscanear);
 }
+
+/**
+ * Exporta el reporte de aforo e historial de lecturas a PDF utilizando la vista de impresión optimizada
+ */
+function exportarLogAforoPDF() {
+  const ev = estadoAforo.eventoSeleccionado;
+  const tituloEvento = ev ? ev.titulo : 'Evento General';
+  
+  mostrarToast(`Generando reporte en PDF para: ${tituloEvento}`, 'exito');
+  setTimeout(() => {
+    window.print();
+  }, 300);
+}

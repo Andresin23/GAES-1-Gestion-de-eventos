@@ -11,16 +11,15 @@
 </head>
 <body class="login-body">
 
-  <div class="login-container">
-    
-    <!-- PANEL IZQUIERDO INSTITUCIONAL -->
-    <div class="login-banner">
+  <main class="login-container" role="main">
+
+    <header class="login-banner">
       <div>
         <div class="login-brand">
-          <div class="logo-sena-badge">SENA</div>
+          <div class="logo-sena-badge" aria-hidden="true">SENA</div>
           <div>
-            <div style="font-size: 18px; font-weight: 800; letter-spacing: 0.8px; color: white;">FONDO EMPRENDER</div>
-            <div style="font-size: 12px; color: #94A3B8;">Sistema de Gestión de Eventos & Aforo</div>
+            <span style="font-size: 18px; font-weight: 800; letter-spacing: 0.8px; color: white; display: block;">FONDO EMPRENDER</span>
+            <span style="font-size: 12px; color: #94A3B8; display: block;">Sistema de Gestión de Eventos & Aforo</span>
           </div>
         </div>
 
@@ -34,18 +33,17 @@
         </div>
       </div>
 
-      <div style="font-size: 12px; color: #64748B; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+      <footer style="font-size: 12px; color: #64748B; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
         Servicio Nacional de Aprendizaje SENA · GAES-1 © 2026
-      </div>
-    </div>
+      </footer>
+    </header>
 
-    <!-- PANEL DERECHO: FORMULARIOS DE LOGIN / REGISTRO / VISOR -->
-    <div class="login-form-side">
-      
-      <div style="margin-bottom: 20px; text-align: center;">
+    <section class="login-form-side" aria-label="Portal de ingreso">
+
+      <header style="margin-bottom: 20px; text-align: center;">
         <h2 style="font-size: 22px; font-weight: 800; color: var(--sena-navy);">Bienvenido(a)</h2>
         <p style="font-size: 13px; color: var(--texto-secundario);">Inicia sesión con tu cuenta de Google</p>
-      </div>
+      </header>
 
       <div id="pantalla-google">
         <p class="google-auth-ayuda">
@@ -95,13 +93,14 @@
         </form>
       </div>
 
-    </div>
+    </section>
 
-  </div>
+  </main>
 
-  <script src="js/config.js?v=3.3"></script>
-  <script src="js/api.js?v=3.2"></script>
+  <script src="js/accessibility.js"></script>
+  <script src="js/config.js?v=3.4"></script>
+  <script src="js/api.js?v=3.4"></script>
   <script src="js/google-auth.js?v=3.4"></script>
-  <script src="js/login.js?v=3.2"></script>
+  <script src="js/login.js?v=3.4"></script>
 </body>
 </html>
