@@ -7,6 +7,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   inicializarCalendario();
+  if (window.location.hash === '#login') abrirModalLogin();
 });
 
 let estadoCalendario = {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Acceso al Sistema - Fondo Emprender SENA</title>
   <meta name="description" content="Portal de autenticación y selección de roles para el Sistema de Gestión de Eventos del Fondo Emprender del SENA (GAES-1).">
-  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="stylesheet" href="css/styles.css?v=3.1">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body class="login-body">
@@ -69,6 +69,14 @@
             Iniciar Sesión
           </button>
         </form>
+
+        <div class="google-auth-separator"><span>o continúa con</span></div>
+        <div class="google-auth-control">
+          <div id="google-signin-button-login" class="google-auth-button" data-google-signin-button aria-label="Acceso con Google">
+            <span class="google-auth-loading">Cargando acceso con Google...</span>
+          </div>
+          <p class="google-auth-status" data-google-auth-status role="status" aria-live="polite" hidden></p>
+        </div>
 
         <!-- ACCESO DIRECTO DEMO POR ROLES -->
         <aside style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);" aria-label="Cuentas demo de prueba">
@@ -142,8 +150,10 @@
 
   </main>
 
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="js/accessibility.js"></script>
-  <script src="js/api.js"></script>
+  <script src="js/api.js?v=3.1"></script>
   <script src="js/login.js"></script>
+  <script src="js/google-auth.js?v=1.0"></script>
 </body>
 </html>

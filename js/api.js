@@ -186,7 +186,14 @@ function guardarNuevoEvento(evento) {
 function obtenerSesion() {
   try {
     const sesion = localStorage.getItem('sena_sesion');
-    return sesion ? JSON.parse(sesion) : null;
+    const datosSesion = sesion ? JSON.parse(sesion) : null;
+
+    if (datosSesion?.proveedor === 'google' && (!Number.isFinite(datosSesion.expiraEn) || datosSesion.expiraEn <= Date.now())) {
+      localStorage.removeItem('sena_sesion');
+      return null;
+    }
+
+    return datosSesion;
   } catch (e) {
     return null;
   }
@@ -198,7 +205,13 @@ function guardarSesion(datosSesion) {
 }
 
 function cerrarSesion() {
+  const sesion = obtenerSesion();
   localStorage.removeItem('sena_sesion');
+
+  if (sesion?.proveedor === 'google' && window.google?.accounts?.id) {
+    window.google.accounts.id.disableAutoSelect();
+  }
+
   mostrarToast('Has cerrado sesión correctamente.', 'exito');
   setTimeout(() => {
     window.location.href = 'login.html';
@@ -213,7 +226,7 @@ function verificarAccesoSistema() {
   const sesion = obtenerSesion();
 
   // 1. Redirección a login si no hay sesión
-  if (!sesion && !esLogin) {
+  if (!sesion && !esLogin && !esCalendario) {
     window.location.href = 'login.html';
     return;
   }
@@ -544,6 +557,16 @@ function manejarRespuestaFallback(ruta, opciones) {
 // 5. HEADER USUARIO Y SESIÓN EN UI CON BOTONES SEGÚN ROL
 // ============================================================================
 
+function inicialesUsuario(nombre) {
+  return nombre.trim().split(/\s+/).filter(Boolean).map(parte => parte.charAt(0)).join('').substring(0, 2).toUpperCase() || 'UG';
+}
+
+function escaparHTML(valor) {
+  const elemento = document.createElement('div');
+  elemento.textContent = String(valor ?? '');
+  return elemento.innerHTML;
+}
+
 function actualizarBarraUsuarioHeader() {
   const contenedorNav = document.querySelector('.nav-principal');
   if (!contenedorNav) return;
@@ -565,11 +588,13 @@ function actualizarBarraUsuarioHeader() {
   const linkAforo = document.querySelector('.nav-link[href="control-aforo.html"]');
   const linkAcceso = document.querySelector('a[href="index.html#login"]');
 
-  if (linkAcceso) linkAcceso.style.display = 'none';
-
   if (sesion && sesion.usuario) {
+    if (linkAcceso) linkAcceso.style.display = 'none';
     const u = sesion.usuario;
-    const iniciales = u.nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const nombre = String(u.nombre || 'Usuario Google');
+    const iniciales = inicialesUsuario(nombre);
+    const nombreHTML = escaparHTML(nombre);
+    const rolHTML = escaparHTML(u.rol || 'Usuario');
 
     const esLogistico = u.rol === 'Operador de Logística' || u.rol === 'Logística';
     const esEmprendedor = u.rol === 'Emprendedor SENA' || u.rol === 'Emprendedor';
@@ -600,11 +625,11 @@ function actualizarBarraUsuarioHeader() {
       ${botonCrearEventoHTML}
       <div class="chip-usuario" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
         <div style="background: var(--sena-verde); color: white; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center;">
-          ${iniciales}
+          ${escaparHTML(iniciales)}
         </div>
         <div style="font-size: 12px; text-align: left;">
-          <div style="font-weight: 700; color: white; line-height: 1.1;">${u.nombre}</div>
-          <div style="color: #34D399; font-size: 11px; font-weight: 600;">${u.rol}</div>
+          <div style="font-weight: 700; color: white; line-height: 1.1;">${nombreHTML}</div>
+          <div style="color: #34D399; font-size: 11px; font-weight: 600;">${rolHTML}</div>
         </div>
       </div>
       <button onclick="cerrarSesion()" class="btn btn-sm" style="background: rgba(239,68,68,0.15); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; font-size: 12px;" title="Cerrar Sesión">
@@ -614,12 +639,8 @@ function actualizarBarraUsuarioHeader() {
   } else {
     if (linkAforo) linkAforo.style.display = 'none';
     if (linkCalendario) linkCalendario.style.display = 'inline-flex';
-
-    userBox.innerHTML = `
-      <a href="login.html" class="btn btn-primario btn-sm" style="font-size: 13px; text-decoration: none;">
-        Iniciar Sesión / Registro
-      </a>
-    `;
+    if (linkAcceso) linkAcceso.style.display = 'inline-flex';
+    userBox.innerHTML = '';
   }
 }
 
@@ -642,9 +663,9 @@ function mostrarToast(mensaje, tipo = 'exito') {
 
   const toast = document.createElement('div');
   toast.className = `toast ${tipo}`;
-  toast.innerHTML = `
-    <div>${mensaje}</div>
-  `;
+  const contenido = document.createElement('div');
+  contenido.textContent = mensaje;
+  toast.appendChild(contenido);
 
   contenedor.appendChild(toast);
 

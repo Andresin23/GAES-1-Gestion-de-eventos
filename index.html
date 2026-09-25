@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calendario Público de Eventos - Fondo Emprender SENA</title>
   <meta name="description" content="Plataforma de gestión de eventos, convocatorias y ruedas de negocios del Fondo Emprender del SENA.">
-  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="stylesheet" href="css/styles.css?v=3.1">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
@@ -29,7 +29,7 @@
           <a href="control-aforo.html" class="nav-link">
             Control de Aforo (Puerta)
           </a>
-          <a href="index.html#login" class="nav-link">
+          <a href="index.html#login" class="nav-link" onclick="abrirModalLogin(); event.preventDefault();">
             Acceso Institucional
           </a>
         </nav>
@@ -322,6 +322,14 @@
             <button type="submit" class="btn btn-primario btn-bloque">Entrar al Sistema</button>
           </form>
 
+          <div class="google-auth-separator"><span>o continúa con</span></div>
+          <div class="google-auth-control">
+            <div id="google-signin-button-modal" class="google-auth-button" data-google-signin-button aria-label="Acceso con Google">
+              <span class="google-auth-loading">Cargando acceso con Google...</span>
+            </div>
+            <p class="google-auth-status" data-google-auth-status role="status" aria-live="polite" hidden></p>
+          </div>
+
           <!-- Acceso Rápido Demo por Roles -->
           <aside style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde);">
             <p style="font-size: 11.5px; font-weight: 700; color: var(--sena-navy); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -387,8 +395,10 @@
   </div>
 
   <!-- SCRIPTS MODULARES JS -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="js/accessibility.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/calendar.js"></script>
+  <script src="js/api.js?v=3.1"></script>
+  <script src="js/calendar.js?v=3.1"></script>
+  <script src="js/google-auth.js?v=1.0"></script>
 </body>
 </html>
