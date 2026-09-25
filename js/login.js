@@ -67,7 +67,7 @@ async function procesarRegistro(event) {
   const documento = document.getElementById('reg-documento').value;
   const email = document.getElementById('reg-email').value;
   const password = document.getElementById('reg-password').value;
-  const rol = document.getElementById('reg-rol').value;
+  const rol = 'Visor Público / Asistente';
 
   try {
     const respuesta = await peticionAPI('/auth/register', {
