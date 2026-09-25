@@ -1251,6 +1251,10 @@ body.login-body {
   width: 100%;
 }
 
+.google-auth-role {
+  margin-bottom: 12px;
+}
+
 .google-auth-button {
   width: 100%;
   min-height: 44px;

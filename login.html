@@ -72,6 +72,16 @@
 
         <div class="google-auth-separator"><span>o continúa con</span></div>
         <div class="google-auth-control">
+          <div class="google-auth-role">
+            <label for="google-rol-login" class="campo-label">Rol para la cuenta Google</label>
+            <select id="google-rol-login" class="entrada-control" data-google-role>
+              <option value="Visor Público / Asistente">Visor Público / Asistente</option>
+              <option value="Emprendedor SENA">Emprendedor SENA / Fondo Emprender</option>
+              <option value="Comprador / Inversionista">Comprador / Inversionista</option>
+              <option value="Comité Evaluador">Comité Evaluador de Eventos</option>
+              <option value="Operador de Logística">Operador de Logística (Control de Aforo)</option>
+            </select>
+          </div>
           <div id="google-signin-button-login" class="google-auth-button" data-google-signin-button aria-label="Acceso con Google">
             <span class="google-auth-loading">Cargando acceso con Google...</span>
           </div>

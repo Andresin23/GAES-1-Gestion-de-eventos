@@ -13,6 +13,13 @@ const GOOGLE_ROLES_LOCALES = new Set([
   'Visor Público / Asistente',
   'Aprendiz / Público General'
 ]);
+const GOOGLE_ROLES_SELECCIONABLES = new Set([
+  'Visor Público / Asistente',
+  'Emprendedor SENA',
+  'Comprador / Inversionista',
+  'Comité Evaluador',
+  'Operador de Logística'
+]);
 const GOOGLE_STATE = crearValorAleatorioGoogle();
 const GOOGLE_NONCE = crearValorAleatorioGoogle();
 
@@ -162,7 +169,7 @@ function construirUsuarioGoogle(claims) {
   const correo = claims.email.trim().toLowerCase();
   const usuarioLocal = obtenerUsuariosGuardados().find(usuario => usuario.email?.trim().toLowerCase() === correo);
   const nombre = obtenerTextoGoogle(claims.name) || [claims.given_name, claims.family_name].map(obtenerTextoGoogle).filter(Boolean).join(' ') || 'Usuario Google';
-  const rol = usuarioLocal && GOOGLE_ROLES_LOCALES.has(usuarioLocal.rol) ? usuarioLocal.rol : GOOGLE_ROL_POR_DEFECTO;
+  const rol = usuarioLocal && GOOGLE_ROLES_LOCALES.has(usuarioLocal.rol) ? usuarioLocal.rol : obtenerRolGoogleSeleccionado();
 
   return {
     id: usuarioLocal?.id || `google:${claims.sub}`,
@@ -173,6 +180,11 @@ function construirUsuarioGoogle(claims) {
     picture: typeof claims.picture === 'string' ? claims.picture : '',
     emailVerified: true
   };
+}
+
+function obtenerRolGoogleSeleccionado() {
+  const selector = document.querySelector('[data-google-role]');
+  return selector && GOOGLE_ROLES_SELECCIONABLES.has(selector.value) ? selector.value : GOOGLE_ROL_POR_DEFECTO;
 }
 
 function obtenerTextoGoogle(valor) {
