@@ -6,6 +6,9 @@
  */
 
 const API_BASE_URL = '/api';
+const SESION_MAX_INACTIVIDAD_MS = 30 * 60 * 1000;
+const ACTIVIDAD_MINIMA_ACTUALIZACION_MS = 60 * 1000;
+let ultimaActualizacionActividad = 0;
 
 // ============================================================================
 // 1. SISTEMA DE USUARIOS DEFAULT Y ALMACENAMIENTO EN LOCALSTORAGE
@@ -183,25 +186,74 @@ function guardarNuevoEvento(evento) {
 // 3. GESTIÓN DE SESIÓN DE USUARIO Y VALIDACIÓN DE MATRIZ DE PERMISOS (RBAC)
 // ============================================================================
 
+function esSesionActiva(sesion) {
+  if (!sesion || typeof sesion !== 'object' || !sesion.usuario || typeof sesion.usuario !== 'object') {
+    return false;
+  }
+
+  const { id, nombre, email, rol } = sesion.usuario;
+  const ahora = Date.now();
+  const identificadorValido = (typeof id === 'number' && Number.isFinite(id)) || (typeof id === 'string' && id.trim().length > 0);
+  const actividadValida = Number.isFinite(sesion.ultimaActividad)
+    && sesion.ultimaActividad > ahora - SESION_MAX_INACTIVIDAD_MS
+    && sesion.ultimaActividad <= ahora + 60000;
+  const credencialValida = sesion.proveedor === 'google'
+    ? Number.isFinite(sesion.expiraEn) && sesion.expiraEn > ahora
+    : typeof sesion.token === 'string' && sesion.token.length > 0;
+
+  return Boolean(
+    identificadorValido
+    && typeof nombre === 'string' && nombre.trim().length > 0
+    && typeof email === 'string' && email.trim().length > 0
+    && typeof rol === 'string' && rol.trim().length > 0
+    && actividadValida
+    && credencialValida
+  );
+}
+
 function obtenerSesion() {
   try {
     const sesion = localStorage.getItem('sena_sesion');
     const datosSesion = sesion ? JSON.parse(sesion) : null;
 
-    if (datosSesion?.proveedor === 'google' && (!Number.isFinite(datosSesion.expiraEn) || datosSesion.expiraEn <= Date.now())) {
+    if (!esSesionActiva(datosSesion)) {
       localStorage.removeItem('sena_sesion');
       return null;
     }
 
     return datosSesion;
-  } catch (e) {
+  } catch {
+    localStorage.removeItem('sena_sesion');
     return null;
   }
 }
 
 function guardarSesion(datosSesion) {
-  localStorage.setItem('sena_sesion', JSON.stringify(datosSesion));
+  const sesionActualizada = {
+    ...datosSesion,
+    ultimaActividad: Date.now()
+  };
+  localStorage.setItem('sena_sesion', JSON.stringify(sesionActualizada));
   actualizarBarraUsuarioHeader();
+}
+
+function registrarActividadSesion() {
+  const ahora = Date.now();
+  if (ahora - ultimaActualizacionActividad < ACTIVIDAD_MINIMA_ACTUALIZACION_MS) return;
+
+  const sesion = obtenerSesion();
+  if (!sesion) return;
+
+  sesion.ultimaActividad = ahora;
+  localStorage.setItem('sena_sesion', JSON.stringify(sesion));
+  ultimaActualizacionActividad = ahora;
+}
+
+function activarControlActividadSesion() {
+  if (!obtenerSesion()) return;
+  ['pointerdown', 'keydown', 'touchstart'].forEach(evento => {
+    window.addEventListener(evento, registrarActividadSesion, { passive: true });
+  });
 }
 
 function cerrarSesion() {
@@ -214,7 +266,7 @@ function cerrarSesion() {
 
   mostrarToast('Has cerrado sesión correctamente.', 'exito');
   setTimeout(() => {
-    window.location.href = 'login.html';
+    window.location.replace('login.html');
   }, 400);
 }
 
@@ -222,40 +274,41 @@ function verificarAccesoSistema() {
   const rutaActual = window.location.pathname;
   const esLogin = rutaActual.endsWith('login.html');
   const esAforo = rutaActual.endsWith('control-aforo.html');
-  const esCalendario = rutaActual.endsWith('index.html') || rutaActual.endsWith('/') || rutaActual === '';
   const sesion = obtenerSesion();
 
-  // 1. Redirección a login si no hay sesión
-  if (!sesion && !esLogin && !esCalendario) {
-    window.location.href = 'login.html';
+  if (!sesion) {
+    if (!esLogin) {
+      window.location.replace('login.html');
+    }
     return;
   }
 
-  if (sesion && sesion.usuario) {
-    const rol = sesion.usuario.rol;
-    const esLogistico = rol === 'Operador de Logística' || rol === 'Logística';
-    const esEmprendedor = rol === 'Emprendedor SENA' || rol === 'Emprendedor';
-    const esComite = rol === 'Comité Evaluador' || rol === 'Comité';
-    const esVisor = rol === 'Visor Público' || rol === 'Visor Público / Asistente' || rol === 'Aprendiz / Público General';
-    const esAdmin = rol === 'Administrador';
+  if (esLogin) {
+    window.location.replace('index.html');
+    return;
+  }
 
-    // 2. Logístico: SOLO puede estar en control-aforo.html
-    if (esLogistico && !esAforo && !esLogin) {
-      mostrarToast('Rol Logístico: Redirigiendo al Panel de Control de Aforo...', 'exito');
-      setTimeout(() => {
-        window.location.href = 'control-aforo.html';
-      }, 300);
-      return;
-    }
+  const rol = sesion.usuario.rol;
+  const esLogistico = rol === 'Operador de Logística' || rol === 'Logística';
+  const esEmprendedor = rol === 'Emprendedor SENA' || rol === 'Emprendedor';
+  const esComite = rol === 'Comité Evaluador' || rol === 'Comité';
+  const esVisor = rol === 'Visor Público' || rol === 'Visor Público / Asistente' || rol === 'Aprendiz / Público General';
 
-    // 3. Emprendedor, Comité y Visor Público: NO pueden acceder a control-aforo.html
-    if (esAforo && (esEmprendedor || esComite || esVisor)) {
-      mostrarToast(`Acceso Restringido: Tu rol (${rol}) no tiene permisos para el Control de Aforo en Puerta.`, 'error');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 1000);
-      return;
-    }
+  // 2. Logístico: SOLO puede estar en control-aforo.html
+  if (esLogistico && !esAforo) {
+    mostrarToast('Rol Logístico: Redirigiendo al Panel de Control de Aforo...', 'exito');
+    setTimeout(() => {
+      window.location.replace('control-aforo.html');
+    }, 300);
+    return;
+  }
+
+  // 3. Emprendedor, Comité y Visor Público: NO pueden acceder a control-aforo.html
+  if (esAforo && (esEmprendedor || esComite || esVisor)) {
+    mostrarToast(`Acceso Restringido: Tu rol (${rol}) no tiene permisos para el Control de Aforo en Puerta.`, 'error');
+    setTimeout(() => {
+      window.location.replace('index.html');
+    }, 1000);
   }
 }
 
@@ -286,6 +339,13 @@ function tienePermiso(accion) {
  */
 async function peticionAPI(ruta, opciones = {}) {
   const sesion = obtenerSesion();
+  const esRutaAutenticacion = ruta === '/auth/login' || ruta === '/auth/register';
+
+  if (!esRutaAutenticacion && !sesion) {
+    window.location.replace('login.html');
+    throw new Error('Debes iniciar sesión para continuar.');
+  }
+
   const cabeceras = {
     'Content-Type': 'application/json',
     ...(opciones.cabeceras || {})
@@ -645,6 +705,7 @@ function actualizarBarraUsuarioHeader() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  activarControlActividadSesion();
   verificarAccesoSistema();
   actualizarBarraUsuarioHeader();
 });
