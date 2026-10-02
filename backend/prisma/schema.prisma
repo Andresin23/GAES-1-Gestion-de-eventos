@@ -5,6 +5,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Conexion directa (sin pooler) para Prisma Migrate.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -57,25 +59,22 @@ enum EmailStatus {
 
 model User {
   id                   String        @id @default(cuid())
+  // Identificador del usuario en Supabase Auth (auth.users). Las credenciales,
+  // la verificacion de correo y el MFA los administra Supabase, no la API.
+  authId               String?       @unique @db.Uuid
   documentNumber       String        @unique
   documentType         String        @default("CC")
   email                String        @unique
-  passwordHash         String
   firstName            String
   lastName             String
   phone                String?
   birthDate            DateTime?
   dataPolicyAcceptedAt DateTime?
   emailVerifiedAt      DateTime?
-  emailOtp             String?
-  emailOtpExpiresAt    DateTime?
-  verificationToken    String?       @unique
-  resetToken           String?       @unique
-  resetTokenExpiresAt  DateTime?
   failedLoginAttempts  Int           @default(0)
   lockedUntil          DateTime?
   lastLoginAt          DateTime?
-  mfaSecret            String?
+  // Espejo de si el usuario ya enrolo un factor TOTP en Supabase.
   mfaEnabled           Boolean       @default(false)
   activeRole           Role          @default(ASISTENTE)
   status               AccountStatus @default(ACTIVO)
@@ -84,7 +83,6 @@ model User {
   updatedAt            DateTime      @updatedAt
 
   roles            UserRole[]
-  refreshTokens    RefreshToken[]
   accessLogs       AccessLog[]
   registrations    Registration[]
   buyerProfile     BuyerProfile?
@@ -120,20 +118,6 @@ model AccessLog {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
-}
-
-model RefreshToken {
-  id         String    @id @default(cuid())
-  userId     String
-  tokenHash  String    @unique
-  expiresAt  DateTime
-  lastUsedAt DateTime?
-  revokedAt  DateTime?
-  createdAt  DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
 }
 
 model Category {

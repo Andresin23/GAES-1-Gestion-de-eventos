@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/db.js';
+import { supabaseAdmin } from '../../config/supabase.js';
 import {
   NotFoundError,
   ConflictError,
@@ -96,12 +96,27 @@ export async function crearUsuarioAdmin(datos: {
   const rolesValidos = Array.from(new Set(datos.roles));
   const activeRole = datos.activeRole ?? rolesValidos[0];
 
+  const { data: creado, error } = await supabaseAdmin.auth.admin.createUser({
+    email: datos.email,
+    password: datos.password,
+    email_confirm: true,
+    user_metadata: {
+      document_number: datos.documentNumber,
+      document_type: datos.documentType ?? 'CC',
+      first_name: datos.firstName,
+      last_name: datos.lastName
+    }
+  });
+  if (error || !creado.user) {
+    throw new ConflictError(error?.message ?? 'No se pudo crear la cuenta en Supabase.');
+  }
+
   const user = await prisma.user.create({
     data: {
+      authId: creado.user.id,
       documentNumber: datos.documentNumber,
       documentType: datos.documentType ?? 'CC',
       email: datos.email,
-      passwordHash: await bcrypt.hash(datos.password, 10),
       firstName: datos.firstName,
       lastName: datos.lastName,
       phone: datos.phone,
@@ -139,6 +154,14 @@ export async function editarUsuarioAdmin(
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new NotFoundError('Usuario no encontrado.');
 
+  if (datos.password) {
+    if (!user.authId) throw new BadRequestError('El usuario no está vinculado a Supabase Auth.');
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.authId, {
+      password: datos.password
+    });
+    if (error) throw new BadRequestError(error.message);
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id },
@@ -147,8 +170,7 @@ export async function editarUsuarioAdmin(
         ...(datos.lastName ? { lastName: datos.lastName } : {}),
         ...(datos.phone !== undefined ? { phone: datos.phone } : {}),
         ...(datos.documentType ? { documentType: datos.documentType } : {}),
-        ...(datos.activeRole ? { activeRole: datos.activeRole } : {}),
-        ...(datos.password ? { passwordHash: await bcrypt.hash(datos.password, 10) } : {})
+        ...(datos.activeRole ? { activeRole: datos.activeRole } : {})
       }
     });
 
@@ -182,7 +204,10 @@ export async function suspenderUsuario(id: string, editorId: string) {
   if (user.status === 'ELIMINADO') throw new BadRequestError('La cuenta fue eliminada.');
 
   await prisma.user.update({ where: { id }, data: { status: 'SUSPENDIDO' } });
-  await prisma.refreshToken.updateMany({ where: { userId: id }, data: { revokedAt: new Date() } });
+  if (user.authId) {
+    // El ban en Supabase invalida las sesiones abiertas y bloquea el login.
+    await supabaseAdmin.auth.admin.updateUserById(user.authId, { ban_duration: '876000h' });
+  }
   await registrarAuditoria({ userId: editorId, action: 'USUARIO_SUSPENDIDO', entity: 'User', entityId: id });
   return { ok: true };
 }
@@ -193,6 +218,9 @@ export async function activarUsuario(id: string, editorId: string) {
   if (user.status === 'ELIMINADO') throw new BadRequestError('La cuenta fue eliminada.');
 
   await prisma.user.update({ where: { id }, data: { status: 'ACTIVO' } });
+  if (user.authId) {
+    await supabaseAdmin.auth.admin.updateUserById(user.authId, { ban_duration: 'none' });
+  }
   await registrarAuditoria({ userId: editorId, action: 'USUARIO_REACTIVADO', entity: 'User', entityId: id });
   return { ok: true };
 }
@@ -213,12 +241,17 @@ export async function eliminarCuentaAdmin(id: string, editorId: string) {
       anonymizedAt: new Date()
     }
   });
-  await prisma.refreshToken.updateMany({ where: { userId: id }, data: { revokedAt: new Date() } });
+  if (user.authId) {
+    await supabaseAdmin.auth.admin.deleteUser(user.authId);
+  }
   await registrarAuditoria({ userId: editorId, action: 'USUARIO_ELIMINADO', entity: 'User', entityId: id });
   return { ok: true };
 }
 
 export async function eliminarMiCuenta(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new NotFoundError('Usuario no encontrado.');
+
   await prisma.user.update({
     where: { id: userId },
     data: {
@@ -230,7 +263,9 @@ export async function eliminarMiCuenta(userId: string) {
       anonymizedAt: new Date()
     }
   });
-  await prisma.refreshToken.updateMany({ where: { userId }, data: { revokedAt: new Date() } });
+  if (user.authId) {
+    await supabaseAdmin.auth.admin.deleteUser(user.authId);
+  }
   await registrarAuditoria({ userId, action: 'CUENTA_ELIMINADA', entity: 'User', entityId: userId });
   return { ok: true };
 }

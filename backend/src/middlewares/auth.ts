@@ -1,29 +1,39 @@
-import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
-import { env } from '../config/env.js';
+import { prisma } from '../config/db.js';
+import { supabaseAdmin, type ClaimsSupabase } from '../config/supabase.js';
 import { UnauthorizedError, ForbiddenError } from '../shared/errors.js';
-import type { TokenCargos } from '../shared/types.js';
 import type { Role } from '@prisma/client';
 
-export function firmarAccessToken(datos: TokenCargos): string {
-  return jwt.sign(datos, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
-    issuer: 'eventos-sena-api'
-  });
+/**
+ * Lee los claims de un JWT ya validado. Solo se usa para extraer `aal`, que
+ * indica si la sesion completo el segundo factor (aal2) o no (aal1).
+ */
+function leerClaims(token: string): Partial<ClaimsSupabase> {
+  const [, payload] = token.split('.');
+  if (!payload) return {};
+  return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as ClaimsSupabase;
 }
 
-export function firmarRefreshToken(sub: string): string {
-  return jwt.sign({ sub }, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'],
-    issuer: 'eventos-sena-api'
-  });
+/**
+ * Valida el access token de Supabase contra el servidor de Auth y devuelve el
+ * usuario junto con el nivel de garantia de la sesion.
+ */
+export async function verificarTokenSupabase(token: string) {
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data.user) {
+    throw new UnauthorizedError('El token de acceso expiró o es inválido.');
+  }
+
+  const claims = leerClaims(token);
+  return {
+    authId: data.user.id,
+    correo: data.user.email ?? '',
+    aal: claims.aal ?? 'aal1',
+    mfaVerificado: claims.aal === 'aal2'
+  };
 }
 
-export function verificarAccessToken(token: string): TokenCargos {
-  return jwt.verify(token, env.JWT_SECRET, { issuer: 'eventos-sena-api' }) as TokenCargos;
-}
-
-export function authRequerido(req: Request, _res: Response, next: NextFunction) {
+export async function authRequerido(req: Request, _res: Response, next: NextFunction) {
   const encabezado = req.headers.authorization;
   if (!encabezado?.startsWith('Bearer ')) {
     next(new UnauthorizedError('Se requiere un token de acceso válido.'));
@@ -31,17 +41,37 @@ export function authRequerido(req: Request, _res: Response, next: NextFunction) 
   }
 
   const token = encabezado.slice(7).trim();
+
   try {
-    const cargos = verificarAccessToken(token);
+    const sesion = await verificarTokenSupabase(token);
+
+    const perfil = await prisma.user.findUnique({
+      where: { authId: sesion.authId },
+      include: { roles: true }
+    });
+
+    if (!perfil) {
+      next(new ForbiddenError('Tu cuenta de Supabase no tiene un perfil asociado en el sistema.'));
+      return;
+    }
+    if (perfil.status === 'SUSPENDIDO') {
+      next(new ForbiddenError('La cuenta está suspendida. Contacta al administrador.'));
+      return;
+    }
+    if (perfil.status === 'ELIMINADO') {
+      next(new ForbiddenError('La cuenta fue eliminada.'));
+      return;
+    }
+
     req.auth = {
-      id: cargos.sub,
-      roles: cargos.roles,
-      activeRole: cargos.activeRole,
-      mfaVerificado: Boolean(cargos.mfa)
+      id: perfil.id,
+      roles: perfil.roles.map((r) => r.role),
+      activeRole: perfil.activeRole,
+      mfaVerificado: sesion.mfaVerificado
     };
     next();
   } catch (error) {
-    next(new UnauthorizedError('El token de acceso expiró o es inválido.'));
+    next(error);
   }
 }
 

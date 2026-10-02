@@ -30,23 +30,18 @@ const esquemaLogin = z.object({
   password: z.string().min(1, 'Escribe tu contraseña.')
 });
 
-const esquemaMfa = z.object({
-  tokenMfa: z.string().min(1),
-  codigo: z.string().length(6, 'El código MFA tiene 6 dígitos.')
-});
-
 const esquemaRefresh = z.object({ refreshToken: z.string().min(1) });
+
+const esquemaLogout = z.object({ accessToken: z.string().min(1).optional() });
 
 const esquemaRecuperar = z.object({ email: z.string().email() });
 
 const esquemaRestablecer = z.object({
-  token: z.string().min(1),
+  accessToken: z.string().min(1, 'El enlace de recuperación expiró o es inválido.'),
   nuevaPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.')
 });
 
 const esquemaReenviarCodigo = z.object({ email: z.string().email() });
-
-const esquemaConfirmarMfa = z.object({ codigo: z.string().length(6, 'El código MFA tiene 6 dígitos.') });
 
 function obtenerIp(req: Request): string {
   const fwd = req.headers['x-forwarded-for'];
@@ -75,25 +70,19 @@ routerAuth.post('/login', validar(esquemaLogin), async (req: Request, res: Respo
   res.json(resultado);
 });
 
-routerAuth.post('/mfa/verificar', validar(esquemaMfa), async (req: Request, res: Response) => {
-  const resultado = await servicio.verificarMfa(req.body, { ip: obtenerIp(req), userAgent: req.headers['user-agent'] });
-  res.json(resultado);
-});
-
-routerAuth.post('/mfa/registrar', authRequerido, async (req: Request, res: Response) => {
+routerAuth.get('/mfa/estado', authRequerido, async (req: Request, res: Response) => {
   if (!req.auth) return;
-  const institucional = req.auth.roles.some((r) => r === 'ADMIN' || r === 'COMITE');
-  if (!institucional) {
-    res.status(403).json({ mensaje: 'El MFA solo aplica para Administrador y Comité Directivo.', errores: [] });
-    return;
-  }
-  const resultado = await servicio.registrarMfa(req.auth.id);
+  const resultado = await servicio.estadoMfa(req.auth.id);
   res.json({ ok: true, ...resultado });
 });
 
-routerAuth.post('/mfa/confirmar', authRequerido, validar(esquemaConfirmarMfa), async (req: Request, res: Response) => {
+/**
+ * El enrolamiento del factor TOTP lo realiza el navegador con supabase-js
+ * (auth.mfa.enroll). Este endpoint solo refleja el estado en el perfil.
+ */
+routerAuth.post('/mfa/confirmar', authRequerido, async (req: Request, res: Response) => {
   if (!req.auth) return;
-  const resultado = await servicio.confirmarMfa(req.auth.id, req.body.codigo);
+  const resultado = await servicio.confirmarMfa(req.auth.id);
   res.json({ ...resultado, mensaje: 'MFA configurado correctamente.' });
 });
 
@@ -102,8 +91,8 @@ routerAuth.post('/refresh', validar(esquemaRefresh), async (req: Request, res: R
   res.json({ ok: true, ...resultado });
 });
 
-routerAuth.post('/logout', validar(esquemaRefresh), async (req: Request, res: Response) => {
-  const resultado = await servicio.cerrarSesion(req.body.refreshToken);
+routerAuth.post('/logout', validar(esquemaLogout), async (req: Request, res: Response) => {
+  const resultado = await servicio.cerrarSesion(req.body.accessToken);
   res.json({ ...resultado, mensaje: 'Sesión cerrada.' });
 });
 
@@ -113,7 +102,10 @@ routerAuth.post('/recuperar', validar(esquemaRecuperar), async (req: Request, re
 });
 
 routerAuth.post('/restablecer', validar(esquemaRestablecer), async (req: Request, res: Response) => {
-  const resultado = await servicio.restablecerContrasena(req.body);
+  const resultado = await servicio.restablecerContrasena({
+    accessToken: req.body.accessToken,
+    nuevaPassword: req.body.nuevaPassword
+  });
   res.json({ ...resultado, mensaje: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
 });
 

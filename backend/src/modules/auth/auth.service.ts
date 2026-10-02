@@ -1,9 +1,6 @@
-import crypto from 'node:crypto';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { generateSecret, generateURI, verifySync } from 'otplib';
 import { prisma } from '../../config/db.js';
 import { env } from '../../config/env.js';
+import { supabaseAdmin, supabasePublico } from '../../config/supabase.js';
 import {
   UnauthorizedError,
   ConflictError,
@@ -11,42 +8,47 @@ import {
   NotFoundError,
   ForbiddenError
 } from '../../shared/errors.js';
-import { firmarAccessToken, firmarRefreshToken } from '../../middlewares/auth.js';
-import type { TokenCargos } from '../../shared/types.js';
-import { encolarCorreo } from '../../shared/mail.js';
 import type { Role } from '@prisma/client';
 
 const ROLES_AUTORREGISTRO: Role[] = ['COMPRADOR', 'PROVEEDOR', 'ASISTENTE'];
 const ROLES_MFA: Role[] = ['ADMIN', 'COMITE'];
-const OTP_VALIDEZ_MS = 24 * 60 * 60 * 1000;
+const MAX_INTENTOS = 5;
 const BLOQUEO_MS = 15 * 60 * 1000;
 
-function generarOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
+type LoginContexto = { ip?: string; userAgent?: string };
+
+/**
+ * Traduce los errores de Supabase a mensajes que el usuario final entienda.
+ */
+function traducirErrorAuth(mensaje: string): string {
+  const m = mensaje.toLowerCase();
+  if (m.includes('email not confirmed')) return 'Debes verificar tu correo antes de ingresar.';
+  if (m.includes('invalid login credentials')) return 'Credenciales incorrectas.';
+  if (m.includes('email rate limit') || m.includes('too many')) {
+    return 'Demasiados intentos. Espera un momento antes de volver a intentarlo.';
+  }
+  if (m.includes('user already registered')) return 'Ese correo ya está registrado.';
+  if (m.includes('password should be')) return 'La contraseña es demasiado débil.';
+  return mensaje;
 }
 
-function hashToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex');
+async function registrarAcceso(userId: string, ctx: LoginContexto) {
+  await prisma.accessLog.create({
+    data: { userId, ip: ctx.ip ?? 'desconocido', userAgent: ctx.userAgent }
+  });
+  await prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
 }
 
-/** Token de un solo propósito: prueba que la contraseña fue validada antes de pedir el MFA. */
-function firmarMfaPendiente(userId: string): string {
-  return jwt.sign({ sub: userId, mfaPendiente: true }, env.JWT_SECRET, {
-    expiresIn: '5m',
-    issuer: 'eventos-sena-api'
+/** Mantiene sincronizado el espejo del correo verificado que vive en auth.users. */
+async function sincronizarVerificacion(userId: string, authId: string) {
+  const { data } = await supabaseAdmin.auth.admin.getUserById(authId);
+  if (!data.user) return;
+  const verificado = Boolean(data.user.email_confirmed_at);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { emailVerifiedAt: verificado ? new Date() : null }
   });
 }
-
-function verificarMfaPendiente(token: string): string {
-  const cargos = jwt.verify(token, env.JWT_SECRET, { issuer: 'eventos-sena-api' }) as {
-    sub: string;
-    mfaPendiente?: boolean;
-  };
-  if (!cargos.mfaPendiente) throw new UnauthorizedError('Token MFA inválido.');
-  return cargos.sub;
-}
-
-type LoginContexto = { ip?: string; userAgent?: string };
 
 export async function registrarUsuario(datos: {
   documentNumber: string;
@@ -75,262 +77,250 @@ export async function registrarUsuario(datos: {
     throw new ConflictError('Ese correo electrónico ya está registrado.');
   }
 
-  const passwordHash = await bcrypt.hash(datos.password, 10);
-  const otp = generarOtp();
+  // Supabase crea la cuenta y envia el correo de verificacion por su cuenta.
+  const { data: creado, error } = await supabaseAdmin.auth.admin.createUser({
+    email: datos.email,
+    password: datos.password,
+    email_confirm: false,
+    user_metadata: {
+      document_number: datos.documentNumber,
+      document_type: datos.documentType ?? 'CC',
+      first_name: datos.firstName,
+      last_name: datos.lastName,
+      phone: datos.phone ?? null
+    }
+  });
+
+  if (error || !creado.user) {
+    throw new ConflictError(traducirErrorAuth(error?.message ?? 'No se pudo crear la cuenta.'));
+  }
 
   const user = await prisma.user.create({
     data: {
+      authId: creado.user.id,
       documentNumber: datos.documentNumber,
       documentType: datos.documentType ?? 'CC',
       email: datos.email,
-      passwordHash,
       firstName: datos.firstName,
       lastName: datos.lastName,
       phone: datos.phone,
       dataPolicyAcceptedAt: new Date(),
-      emailOtp: otp,
-      emailOtpExpiresAt: new Date(Date.now() + OTP_VALIDEZ_MS),
       roles: { create: { role: datos.rol } }
     }
-  });
-
-  await encolarCorreo({
-    to: datos.email,
-    subject: 'Verifica tu correo - Fondo Emprender SENA',
-    template: 'verificar_cuenta',
-    payload: { codigo: otp },
-    createdById: user.id
   });
 
   return { id: user.id, correo: user.email };
 }
 
 export async function verificarCorreo(datos: { email: string; otp: string }) {
-  const user = await prisma.user.findUnique({ where: { email: datos.email } });
-  if (!user) throw new NotFoundError('No existe una cuenta con ese correo.');
-
-  if (user.emailVerifiedAt) return { ok: true };
-
-  if (!user.emailOtp || !user.emailOtpExpiresAt || user.emailOtpExpiresAt < new Date()) {
-    throw new BadRequestError('El código de verificación expiró. Solicita uno nuevo.');
-  }
-  if (user.emailOtp !== datos.otp) {
-    throw new BadRequestError('El código de verificación es incorrecto.');
-  }
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { emailVerifiedAt: new Date(), emailOtp: null, emailOtpExpiresAt: null }
+  const { error } = await supabasePublico.auth.verifyOtp({
+    email: datos.email,
+    token: datos.otp,
+    type: 'email'
   });
+
+  if (error) {
+    throw new BadRequestError(traducirErrorAuth(error.message));
+  }
+
+  const perfil = await prisma.user.findUnique({ where: { email: datos.email } });
+  if (perfil?.authId) {
+    await sincronizarVerificacion(perfil.id, perfil.authId);
+  }
 
   return { ok: true };
 }
 
 export async function reenviarCodigoVerificacion(correo: string) {
-  const user = await prisma.user.findUnique({ where: { email: correo } });
-  if (!user) throw new NotFoundError('No existe una cuenta con ese correo.');
-  if (user.emailVerifiedAt) return { ok: true, mensaje: 'El correo ya fue verificado.' };
+  const perfil = await prisma.user.findUnique({ where: { email: correo } });
+  if (!perfil) return { ok: true };
+  if (perfil.emailVerifiedAt) return { ok: true, mensaje: 'El correo ya fue verificado.' };
 
-  const otp = generarOtp();
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { emailOtp: otp, emailOtpExpiresAt: new Date(Date.now() + OTP_VALIDEZ_MS) }
-  });
-  await encolarCorreo({
-    to: user.email,
-    subject: 'Nuevo código de verificación - Fondo Emprender SENA',
-    template: 'verificar_cuenta',
-    payload: { codigo: otp },
-    createdById: user.id
-  });
+  // `signup` es el tipo que Supabase acepta para reenviar el correo de verificacion.
+  const { error } = await supabasePublico.auth.resend({ type: 'signup', email: correo });
+  if (error) {
+    throw new BadRequestError(traducirErrorAuth(error.message));
+  }
   return { ok: true };
 }
 
 export async function login(datos: { email: string; password: string }, ctx: LoginContexto) {
-  const user = await prisma.user.findUnique({ where: { email: datos.email } });
-  if (!user) {
+  const perfil = await prisma.user.findUnique({
+    where: { email: datos.email },
+    include: { roles: true }
+  });
+
+  if (!perfil) {
     throw new UnauthorizedError('Credenciales incorrectas.');
   }
-
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    const falta = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000 / 60);
+  if (perfil.lockedUntil && perfil.lockedUntil > new Date()) {
+    const falta = Math.ceil((perfil.lockedUntil.getTime() - Date.now()) / 1000 / 60);
     throw new UnauthorizedError(`La cuenta está bloqueada temporalmente. Intenta en ${falta} min.`);
   }
-  if (user.status === 'SUSPENDIDO') {
+  if (perfil.status === 'SUSPENDIDO') {
     throw new UnauthorizedError('La cuenta está suspendida. Contacta al administrador.');
   }
-  if (!user.emailVerifiedAt) {
-    throw new UnauthorizedError('Debes verificar tu correo antes de ingresar.');
+  if (perfil.status === 'ELIMINADO') {
+    throw new UnauthorizedError('La cuenta fue eliminada.');
   }
 
-  const esValida = await bcrypt.compare(datos.password, user.passwordHash);
-  if (!esValida) {
-    const intentos = user.failedLoginAttempts + 1;
-    const data: { failedLoginAttempts: number; lockedUntil?: Date | null } = { failedLoginAttempts: intentos };
-    if (intentos >= 5) {
-      data.failedLoginAttempts = 0;
-      data.lockedUntil = new Date(Date.now() + BLOQUEO_MS);
+  const { data, error } = await supabasePublico.auth.signInWithPassword({
+    email: datos.email,
+    password: datos.password
+  });
+
+  if (error || !data.session) {
+    const intentos = perfil.failedLoginAttempts + 1;
+    const update: { failedLoginAttempts: number; lockedUntil?: Date | null } = {
+      failedLoginAttempts: intentos
+    };
+    if (intentos >= MAX_INTENTOS) {
+      update.failedLoginAttempts = 0;
+      update.lockedUntil = new Date(Date.now() + BLOQUEO_MS);
     }
-    await prisma.user.update({ where: { id: user.id }, data });
-    throw new UnauthorizedError('Credenciales incorrectas.');
+    await prisma.user.update({ where: { id: perfil.id }, data: update });
+    throw new UnauthorizedError(traducirErrorAuth(error?.message ?? 'Credenciales incorrectas.'));
   }
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: perfil.id },
     data: { failedLoginAttempts: 0, lockedUntil: null }
   });
+  await sincronizarVerificacion(perfil.id, data.user.id);
 
-  const esInstitucional = ROLES_MFA.includes(user.activeRole);
-  if (esInstitucional && !user.mfaEnabled) {
+  const requiereMfa = ROLES_MFA.includes(perfil.activeRole);
+  const mfaVerificado = (() => {
+    const [, payload] = (data.session.access_token ?? '').split('.');
+    if (!payload) return false;
+    try {
+      const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { aal?: string };
+      return claims.aal === 'aal2';
+    } catch {
+      return false;
+    }
+  })();
+
+  if (requiereMfa && !mfaVerificado) {
+    const { data: factores } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: data.user.id });
+    const totp = factores?.factors.find((f) => f.factor_type === 'totp' && f.status === 'verified');
+    if (totp) {
+      // El segundo factor se resuelve en el navegador con supabase-js; aqui solo
+      // se informa que la sesion sigue en aal1.
+      return {
+        ok: true,
+        requiereMfa: true,
+        factorId: totp.id,
+        mensaje: 'Ingresa el codigo de tu aplicacion de autenticacion.'
+      };
+    }
     throw new UnauthorizedError('Debes configurar el segundo factor (MFA) antes de ingresar.');
   }
-  if (esInstitucional) {
-    return {
-      ok: true,
-      requiereMfa: true,
-      tokenMfa: firmarMfaPendiente(user.id)
-    };
-  }
 
-  await registrarAcceso(user.id, ctx);
-  const tokens = await emitirTokens(user.id, user.activeRole);
-  return { ok: true, requiereMfa: false, ...tokens };
-}
+  await registrarAcceso(perfil.id, ctx);
 
-export async function verificarMfa(datos: { tokenMfa: string; codigo: string }, ctx: LoginContexto) {
-  const userId = verificarMfaPendiente(datos.tokenMfa);
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !user.mfaSecret || !user.mfaEnabled) {
-    throw new UnauthorizedError('El segundo factor no está configurado.');
-  }
-
-  const resultado = verifySync({ secret: user.mfaSecret, token: datos.codigo, epochTolerance: [30, 30] });
-  if (!resultado.valid) {
-    throw new UnauthorizedError('El código MFA es incorrecto o expiró.');
-  }
-
-  await registrarAcceso(user.id, ctx);
-  const tokens = await emitirTokens(user.id, user.activeRole);
-  return { ok: true, ...tokens };
-}
-
-export async function emitirTokens(userId: string, activeRole: Role) {
-  const roles = (await prisma.userRole.findMany({ where: { userId } })).map((r) => r.role);
-  const cargos: TokenCargos = { sub: userId, roles, activeRole, mfa: true };
-  const refreshToken = firmarRefreshToken(userId);
-  await prisma.refreshToken.create({
-    data: {
-      userId,
-      tokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  return {
+    ok: true,
+    requiereMfa: false,
+    accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
+    expiresIn: data.session.expires_in,
+    usuario: {
+      id: perfil.id,
+      correo: perfil.email,
+      nombres: `${perfil.firstName} ${perfil.lastName}`.trim(),
+      documento: perfil.documentNumber,
+      rolActivo: perfil.activeRole,
+      roles: perfil.roles.map((r) => r.role)
     }
-  });
-  return { accessToken: firmarAccessToken(cargos), refreshToken };
-}
-
-async function registrarAcceso(userId: string, ctx: LoginContexto) {
-  await prisma.accessLog.create({
-    data: { userId, ip: ctx.ip ?? 'desconocido', userAgent: ctx.userAgent }
-  });
-  await prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
+  };
 }
 
 export async function renovarSesion(refreshToken: string) {
-  let cargos: { sub: string };
-  try {
-    cargos = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET, { issuer: 'eventos-sena-api' }) as { sub: string };
-  } catch {
+  const { data, error } = await supabasePublico.auth.refreshSession({ refresh_token: refreshToken });
+  if (error || !data.session) {
     throw new UnauthorizedError('La sesión expiró. Vuelve a iniciar sesión.');
   }
-
-  const ref = await prisma.refreshToken.findUnique({
-    where: { tokenHash: hashToken(refreshToken) },
-    include: { user: true }
-  });
-  if (!ref || ref.revokedAt || ref.expiresAt < new Date() || ref.userId !== cargos.sub) {
-    throw new UnauthorizedError('La sesión expiró. Vuelve a iniciar sesión.');
-  }
-
-  const inactivo = ref.lastUsedAt && Date.now() - ref.lastUsedAt.getTime() > 30 * 60 * 1000;
-  if (inactivo) {
-    await prisma.refreshToken.update({ where: { id: ref.id }, data: { revokedAt: new Date() } });
-    throw new UnauthorizedError('La sesión expiró por inactividad (30 minutos).');
-  }
-
-  await prisma.refreshToken.update({
-    where: { id: ref.id },
-    data: { lastUsedAt: new Date(), expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
-  });
-
-  const roles = (await prisma.userRole.findMany({ where: { userId: ref.user.id } })).map((r) => r.role);
-  const cargosAcceso: TokenCargos = {
-    sub: ref.user.id,
-    roles,
-    activeRole: ref.user.activeRole,
-    mfa: true
+  return {
+    accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
+    expiresIn: data.session.expires_in
   };
-  return { accessToken: firmarAccessToken(cargosAcceso), refreshToken };
 }
 
-export async function cerrarSesion(refreshToken: string) {
-  await prisma.refreshToken.updateMany({
-    where: { tokenHash: hashToken(refreshToken), revokedAt: null },
-    data: { revokedAt: new Date() }
-  });
+export async function cerrarSesion(accessToken?: string) {
+  if (accessToken) {
+    await supabaseAdmin.auth.admin.signOut(accessToken, 'global');
+  }
   return { ok: true };
 }
 
 export async function recuperarContrasena(correo: string) {
-  const user = await prisma.user.findUnique({ where: { email: correo } });
-  if (!user) return { ok: true };
-  const token = crypto.randomBytes(32).toString('hex');
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { resetToken: token, resetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(correo, {
+    redirectTo: `${env.APP_URL}/restablecer-clave.html`
   });
-  await encolarCorreo({
-    to: user.email,
-    subject: 'Recuperación de contraseña - Fondo Emprender SENA',
-    template: 'recuperar_contrasena',
-    payload: { enlace: `${env.APP_URL}/restablecer-clave?token=${token}` },
-    createdById: user.id
-  });
+  if (error) {
+    throw new BadRequestError(traducirErrorAuth(error.message));
+  }
   return { ok: true };
 }
 
-export async function restablecerContrasena(datos: { token: string; nuevaPassword: string }) {
-  const user = await prisma.user.findFirst({
-    where: { resetToken: datos.token, resetTokenExpiresAt: { gt: new Date() } }
-  });
-  if (!user) throw new BadRequestError('El enlace de recuperación expiró o es inválido.');
+/**
+ * El enlace de recuperacion genera una sesion de recuperacion en Supabase. El
+ * cliente debe enviar ese access token; la API solo valida y cambia la clave.
+ */
+export async function restablecerContrasena(datos: {
+  accessToken: string;
+  nuevaPassword: string;
+}) {
+  const { data, error } = await supabasePublico.auth.getUser(datos.accessToken);
+  if (error || !data.user) {
+    throw new BadRequestError('El enlace de recuperación expiró o es inválido.');
+  }
 
-  const passwordHash = await bcrypt.hash(datos.nuevaPassword, 10);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash, resetToken: null, resetTokenExpiresAt: null }
+  const { error: updateErr } = await supabasePublico.auth.updateUser({
+    password: datos.nuevaPassword
   });
-  await prisma.refreshToken.updateMany({ where: { userId: user.id }, data: { revokedAt: new Date() } });
+  if (updateErr) {
+    throw new BadRequestError(traducirErrorAuth(updateErr.message));
+  }
+
+  if (data.user.id) {
+    await supabaseAdmin.auth.admin.signOut(datos.accessToken, 'global');
+  }
+
   return { ok: true };
 }
 
-export async function registrarMfa(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new NotFoundError('Usuario no encontrado.');
-  if (user.mfaEnabled) throw new BadRequestError('El MFA ya está configurado.');
+export async function estadoMfa(userId: string) {
+  const perfil = await prisma.user.findUnique({ where: { id: userId } });
+  if (!perfil) throw new NotFoundError('Usuario no encontrado.');
+  if (!perfil.authId) throw new BadRequestError('El usuario no está vinculado a Supabase Auth.');
 
-  const secret = generateSecret();
-  const otpauth = generateURI({ issuer: 'Fondo Emprender SENA', label: user.email, secret });
-  await prisma.user.update({ where: { id: user.id }, data: { mfaSecret: secret } });
-  return { secret, otpauth };
+  const { data, error } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: perfil.authId });
+  if (error) throw new BadRequestError(traducirErrorAuth(error.message));
+
+  const totp = data.factors.find((f) => f.factor_type === 'totp');
+  const habilitado = Boolean(totp && totp.status === 'verified');
+
+  if (habilitado !== perfil.mfaEnabled) {
+    await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: habilitado } });
+  }
+
+  return {
+    habilitado,
+    factorId: totp?.id ?? null,
+    factores: data.factors.map((f) => ({ id: f.id, tipo: f.factor_type, estado: f.status }))
+  };
 }
 
-export async function confirmarMfa(userId: string, codigo: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !user.mfaSecret) throw new BadRequestError('Configura el MFA primero.');
-
-  const resultado = verifySync({ secret: user.mfaSecret, token: codigo, epochTolerance: [30, 30] });
-  if (!resultado.valid) throw new BadRequestError('El código MFA de confirmación es incorrecto.');
-
-  await prisma.user.update({ where: { id: user.id }, data: { mfaEnabled: true } });
-  return { ok: true };
+/**
+ * El enrolamiento real lo hace el navegador con supabase-js (auth.mfa.enroll /
+ * challengeAndVerify). Aqui solo se refleja el estado en el perfil.
+ */
+export async function confirmarMfa(userId: string) {
+  const estado = await estadoMfa(userId);
+  if (!estado.habilitado) {
+    throw new BadRequestError('No hay un factor TOTP verificado en Supabase.');
+  }
+  return { ok: true, mfaActivo: true };
 }

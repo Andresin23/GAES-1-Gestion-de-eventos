@@ -1,0 +1,63 @@
+# Blueprint de Render para la API (SENA - Fondo Emprender)
+# Uso: Render Dashboard -> New -> Blueprint -> apuntar a este repositorio.
+#
+# La base de datos `banckend` YA existe en Render, por eso NO se declara un
+# bloque `databases:` aqui; solo se referencia via `fromDatabase`.
+# IMPORTANTE: el `name` en `fromDatabase` debe coincidir con el nombre del
+# recurso en el panel de Render (no con el nombre de la base dentro de Postgres).
+
+services:
+  - type: web
+    name: eventos-sena-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    # La region debe coincidir con la de la base de datos ( oregon ),
+    # de lo contrario la URL interna no resuelve.
+    region: oregon
+    branch: main
+    autoDeploy: true
+    plan: starter
+    healthCheckPath: /api/v1/health
+    # Las migraciones se ejecutan una vez por deploy, no en cada arranque.
+    preDeployCommand: npx prisma migrate deploy
+    envVars:
+      # `connectionString` devuelve la URL INTERNA de Render:
+      # postgresql://banckend_user:***@dpg-davq40ad0e5s738v85j0-a/banckend
+      # Solo funciona desde dentro de la red de Render.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: banckend
+          property: connectionString
+
+      # Render genera secretos aleatorios en el primer deploy.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+      # PORT lo inyecta Render automaticamente. No declararlo.
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: America/Bogota
+
+      # Origen del frontend, usado por CORS en produccion.
+      - key: APP_URL
+        value: https://sistema-eventos-fondoemprender.vercel.app
+
+      # SMTP (Mailhog en local / proveedor real en produccion).
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false

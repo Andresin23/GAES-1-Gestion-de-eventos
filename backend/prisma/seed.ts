@@ -1,12 +1,24 @@
 import { PrismaClient, Modality, EventStatus } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
 const prisma = new PrismaClient();
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+  throw new Error('Faltan SUPABASE_URL y SUPABASE_SECRET_KEY para ejecutar el seed.');
+}
+
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
 
 async function main() {
   console.log('Sembrando datos iniciales...');
 
-  const password = await bcrypt.hash('Password123!', 10);
+  const password = 'Password123!';
 
   const usuarios = [
     {
@@ -56,13 +68,33 @@ async function main() {
   const creados: Record<string, string> = {};
 
   for (const u of usuarios) {
+    // La cuenta vive en Supabase Auth; el perfil en nuestra tabla User.
+    let authId = (await prisma.user.findUnique({ where: { documentNumber: u.documentNumber } }))?.authId;
+
+    if (!authId) {
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email: u.email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          document_number: u.documentNumber,
+          first_name: u.firstName,
+          last_name: u.lastName
+        }
+      });
+      if (error || !data.user) {
+        throw new Error(`No se pudo crear la cuenta de ${u.email} en Supabase: ${error?.message}`);
+      }
+      authId = data.user.id;
+    }
+
     const user = await prisma.user.upsert({
       where: { documentNumber: u.documentNumber },
-      update: {},
+      update: { authId },
       create: {
+        authId,
         documentNumber: u.documentNumber,
         email: u.email,
-        passwordHash: password,
         firstName: u.firstName,
         lastName: u.lastName,
         activeRole: u.activeRole,

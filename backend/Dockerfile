@@ -11,4 +11,6 @@ COPY tsconfig.json ./
 COPY src ./src
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts && npx tsx src/server.ts"]
+# Solo arranca el servidor. Las migraciones se ejecutan por separado
+# (Render: preDeployCommand; docker-compose: `command:` del servicio api).
+CMD ["npx", "tsx", "src/server.ts"]

@@ -64,7 +64,7 @@ async function crearRegistroConQR(
 
   await tx.registration.create({
     data: {
-      subEventId,
+      subEventId: subEventoId,
       userId: datos.userId,
       isGuest: datos.isGuest ?? false,
       guestName: datos.guestName,
@@ -172,7 +172,7 @@ export async function inscribirInvitadoEspecial(
 
 export async function cancelarMiInscripcion(userId: string, subEventoId: string) {
   const reg = await prisma.registration.findUnique({
-    where: { userId_subEventId: { userId, subEventId } },
+    where: { userId_subEventId: { userId, subEventId: subEventoId } },
     include: { subEvent: true }
   });
   if (!reg) throw new NotFoundError('No tienes una inscripción a ese sub-evento.');
@@ -197,7 +197,7 @@ export async function cancelarMiInscripcion(userId: string, subEventoId: string)
     if (liberoPrimera) {
       // RF-35: el cupo pasa a la primera persona de la lista de espera.
       const primeroEnEspera = await tx.registration.findFirst({
-        where: { subEventId, status: 'LISTA_ESPERA' },
+        where: { subEventId: subEventoId, status: 'LISTA_ESPERA' },
         orderBy: { waitlistPos: 'asc' }
       });
       if (primeroEnEspera) {

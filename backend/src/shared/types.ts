@@ -1,13 +1,5 @@
 import type { Role, User } from '@prisma/client';
 
-export type TokenCargos = {
-  sub: string;
-  roles: Role[];
-  activeRole: Role;
-  mfa?: boolean;
-  amr?: 'pwd' | 'mfa';
-};
-
 export type Autenticado = {
   id: string;
   roles: Role[];
