@@ -100,12 +100,12 @@ La auditoría al código cliente (`index.html`, `login.html`, `control-aforo.htm
     * `capacidad total` / `subEventos.reduce` ➔ `aforoMaximo`
     * `asistencias` / `subEventos.reduce` ➔ `aforoActual`
   * **Seguridad en Apertura de Modales:** Invocación de modales con IDs alfanuméricos protegidos entre comillas (`onclick="abrirModalDetalle('${ev.id}')"` y `onclick="abrirModalInscripcion('${ev.id}')"`).
-* **Optimizaciones de UI/UX y Accesibilidad WCAG 2.1 AA (Pasos 1 y 2):**
-  * **Alto Contraste Institucional:** `.btn-primario` actualizado a gradiente verde ejecutivo (`#008746` a `#006837`), alcanzando un ratio de contraste superior a 4.5:1 con texto blanco para cumplimiento estricto WCAG AA.
-  * **Navegación Accesible por Teclado:** Cierre de todos los modales mediante tecla `Escape` (`ESC`) y clic en backdrop.
-  * **Descarga de Pase QR en Imagen PNG:** Añadido botón "Guardar Imagen PNG" para almacenamiento directo del pase digital en galerías de teléfonos móviles sin requerir PDF.
-  * **Visibilidad de Contraseña (👁️ / 🙈):** Añadido botón toggle de mostrar/ocultar contraseña en inicio de sesión y registro de [`login.html`](login.html).
-  * **Selector Dinámico de Jornadas:** Habilitado selector de sub-eventos/salas en el modal de inscripción para eventos con múltiples jornadas simultáneas o escalonadas.
+* **Despliegue Full-Stack en Vercel + Supabase Cloud (Resolución de Errores 404 y 405):**
+  * **Serverless Functions ([`api/index.ts`](api/index.ts)):** Adaptador Express Serverless para desplegar el backend directamente en la infraestructura Serverless de Vercel.
+  * **Configuración de Enrutamiento ([`vercel.json`](vercel.json)):** Activado `cleanUrls: true` y reglas de reescritura (`rewrites`) para enrutar transparentemente `/api/v1/*` y `/api/*` hacia la función serverless, eliminando los errores 404 por rutas no encontradas.
+  * **Soporte Prisma en Lambda (`rhel-openssl-3.0.x`):** Añadido `binaryTargets = ["native", "rhel-openssl-3.0.x"]` en [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma) y comando `vercel-build` en el [`package.json`](package.json) raíz para autogenerar el cliente Prisma en los despliegues de Vercel.
+  * **Resiliencia de Variables de Entorno:** Integradas variables de conexión con Supabase Cloud como fallbacks seguros en [`backend/src/config/env.ts`](backend/src/config/env.ts).
+  * **Compatibilidad de Endpoints de Autenticación:** Añadido soporte simultáneo para `/registro` y `/register` con normalización automática de datos en español/inglés en [`backend/src/modules/auth/auth.routes.ts`](backend/src/modules/auth/auth.routes.ts).
 
 ---
 

@@ -5,9 +5,13 @@
  * Sistema de Gestión de Eventos del Fondo Emprender del SENA
  */
 
-const API_BASE_URL = (typeof window !== 'undefined' && window.location.port !== '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-  ? 'http://localhost:3000/api/v1'
-  : '/api/v1';
+const API_BASE_URL = (() => {
+  if (typeof window === 'undefined') return '/api/v1';
+  if (window.location.protocol === 'file:' || (window.location.port !== '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))) {
+    return 'http://localhost:3000/api/v1';
+  }
+  return '/api/v1';
+})();
 const SESION_MAX_INACTIVIDAD_MS = 30 * 60 * 1000;
 const ACTIVIDAD_MINIMA_ACTUALIZACION_MS = 60 * 1000;
 let ultimaActualizacionActividad = 0;

@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "/api/index.ts"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.ts"
+    }
+  ]
+}

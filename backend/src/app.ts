@@ -13,7 +13,19 @@ export function crearApp(): Express {
   const app = express();
 
   app.use(helmet({ contentSecurityPolicy: false }));
-  app.use(cors({ origin: env.NODE_ENV === 'production' ? env.APP_URL : true, credentials: true }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Permitir solicitudes locales, de Vercel y del mismo origen
+        if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.endsWith('.vercel.app') || origin === env.APP_URL) {
+          callback(null, true);
+        } else {
+          callback(null, true);
+        }
+      },
+      credentials: true
+    })
+  );
   app.use(express.json({ limit: '1mb' }));
 
   app.use(
@@ -27,16 +39,23 @@ export function crearApp(): Express {
     })
   );
 
-  app.get('/api/v1/health', (_req: Request, res: Response) => {
+  app.get(['/api/v1/health', '/api/health', '/health'], (_req: Request, res: Response) => {
     res.json({ ok: true, servicio: 'eventos-sena-api', version: '1.0.0' });
   });
 
-  // Módulos institucionales oficiales GAES-1
+  // Módulos institucionales oficiales GAES-1 (Rutas con prefijo /api/v1)
   app.use('/api/v1/auth', routerAuth);
   app.use('/api/v1/eventos', routerEventos);
   app.use('/api/v1/inscripciones', routerInscripciones);
   app.use('/api/v1/aforo', routerAforo);
   app.use('/api/v1/usuarios', routerUsuarios);
+
+  // Alias para despliegue Serverless en Vercel
+  app.use('/auth', routerAuth);
+  app.use('/eventos', routerEventos);
+  app.use('/inscripciones', routerInscripciones);
+  app.use('/aforo', routerAforo);
+  app.use('/usuarios', routerUsuarios);
 
   app.use((_req: Request, res: Response) => {
     res.status(404).json({ mensaje: 'Ruta no encontrada.', errores: [] });

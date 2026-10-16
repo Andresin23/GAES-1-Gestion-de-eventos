@@ -6,18 +6,43 @@ import { serializarUsuario } from '../../shared/types.js';
 import { prisma } from '../../config/db.js';
 import * as servicio from './auth.service.js';
 
-const rolRegistro = z.enum(['COMPRADOR', 'PROVEEDOR', 'ASISTENTE']);
-
 const esquemaRegistro = z.object({
-  documentNumber: z.string().min(5, 'Número de identificación inválido.'),
+  documentNumber: z.string().min(5).optional(),
+  documento: z.string().min(5).optional(),
   documentType: z.enum(['CC', 'CE', 'NIT', 'TI']).default('CC'),
   email: z.string().email('Correo electrónico inválido.'),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
-  firstName: z.string().min(2, 'Escribe tu primer nombre.'),
-  lastName: z.string().min(2, 'Escribe tu apellido.'),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  nombre: z.string().min(1).optional(),
   phone: z.string().regex(/^\+?57?\d{7,10}$/, 'Teléfono inválido. Usa el indicativo +57.').optional(),
-  rol: rolRegistro,
-  acceptedDataPolicy: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar la política de datos.' }) })
+  rol: z.string().default('ASISTENTE'),
+  acceptedDataPolicy: z.boolean().default(true).optional()
+}).transform((datos) => {
+  const partes = (datos.nombre || `${datos.firstName || ''} ${datos.lastName || ''}`).trim().split(/\s+/);
+  const pNombre = datos.firstName || partes[0] || 'Usuario';
+  const pApellido = datos.lastName || partes.slice(1).join(' ') || 'SENA';
+  const doc = datos.documentNumber || datos.documento || '1000000000';
+
+  let r: 'COMPRADOR' | 'PROVEEDOR' | 'ASISTENTE' = 'ASISTENTE';
+  const rolStr = (datos.rol || '').toUpperCase();
+  if (rolStr.includes('COMPRADOR') || rolStr.includes('INVERSIONISTA')) {
+    r = 'COMPRADOR';
+  } else if (rolStr.includes('PROVEEDOR') || rolStr.includes('EMPRENDEDOR')) {
+    r = 'PROVEEDOR';
+  }
+
+  return {
+    documentNumber: doc,
+    documentType: datos.documentType,
+    email: datos.email,
+    password: datos.password,
+    firstName: pNombre,
+    lastName: pApellido,
+    phone: datos.phone,
+    rol: r,
+    acceptedDataPolicy: true as const
+  };
 });
 
 const esquemaVerificarCorreo = z.object({
@@ -50,7 +75,7 @@ function obtenerIp(req: Request): string {
 
 export const routerAuth = Router();
 
-routerAuth.post('/registro', validar(esquemaRegistro), async (req: Request, res: Response) => {
+routerAuth.post(['/registro', '/register'], validar(esquemaRegistro), async (req: Request, res: Response) => {
   const resultado = await servicio.registrarUsuario(req.body);
   res.status(201).json({ ok: true, mensaje: 'Cuenta creada. Revisa tu correo para verificar.', resultado });
 });
