@@ -45,12 +45,12 @@ async function cargarEventosAforo() {
   }
 
   selectEvento.addEventListener('change', (e) => {
-    seleccionarEventoAforo(Number(e.target.value));
+    seleccionarEventoAforo(e.target.value);
   });
 }
 
 function seleccionarEventoAforo(eventoId) {
-  const evento = estadoAforo.eventos.find(e => e.id === eventoId);
+  const evento = estadoAforo.eventos.find(e => String(e.id) === String(eventoId));
   if (!evento) return;
 
   estadoAforo.eventoSeleccionado = evento;
@@ -231,8 +231,66 @@ function configurarFormularios() {
   }
 }
 
+let scannerInstancia = null;
+
 /**
- * Escáner Simulado para pruebas rápidas
+ * Controla el inicio y detención del lector de cámara real vía Html5Qrcode
+ */
+async function toggleCamaraEscaneo() {
+  const btn = document.getElementById('btn-toggle-camara');
+  const visorFallback = document.getElementById('scanner-msg-fallback');
+  const contenedorLector = document.getElementById('lector-camara-qr');
+
+  if (estadoAforo.camaraActiva) {
+    if (scannerInstancia) {
+      try {
+        await scannerInstancia.stop();
+        scannerInstancia.clear();
+      } catch (e) {}
+      scannerInstancia = null;
+    }
+    estadoAforo.camaraActiva = false;
+    if (btn) btn.innerHTML = '📷 Activar Cámara en Vivo';
+    if (visorFallback) visorFallback.style.display = 'block';
+    if (contenedorLector) contenedorLector.innerHTML = '';
+    return;
+  }
+
+  if (!window.Html5Qrcode) {
+    mostrarToast('La librería de escaneo no está disponible. Usa la búsqueda manual.', 'error');
+    return;
+  }
+
+  try {
+    if (btn) btn.innerHTML = '⏹️ Detener Cámara';
+    if (visorFallback) visorFallback.style.display = 'none';
+
+    scannerInstancia = new Html5Qrcode('lector-camara-qr');
+    const qrCodeSuccessCallback = (decodedText) => {
+      if (!estadoAforo.escaneoEnProgreso) {
+        procesarValidacionEntrada(decodedText);
+      }
+    };
+    const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
+
+    await scannerInstancia.start(
+      { facingMode: 'environment' },
+      config,
+      qrCodeSuccessCallback,
+      () => {}
+    );
+    estadoAforo.camaraActiva = true;
+    mostrarToast('Cámara iniciada. Enfoca el código QR del asistente.', 'exito');
+  } catch (err) {
+    estadoAforo.camaraActiva = false;
+    if (btn) btn.innerHTML = '📷 Activar Cámara en Vivo';
+    if (visorFallback) visorFallback.style.display = 'block';
+    mostrarToast('No se pudo acceder a la cámara. Verifica los permisos del navegador.', 'error');
+  }
+}
+
+/**
+ * Escáner de prueba rápida para operadores sin cámara
  */
 function simularEscaneoQR(codigoEspecial = null) {
   const codigosMock = [
@@ -244,7 +302,7 @@ function simularEscaneoQR(codigoEspecial = null) {
   ];
 
   const codigoAEscanear = codigoEspecial || codigosMock[Math.floor(Math.random() * codigosMock.length)];
-  mostrarToast(`[Escáner QR] Detectado código: ${codigoAEscanear}`, 'exito');
+  mostrarToast(`[Lectura] Procesando código: ${codigoAEscanear}`, 'exito');
   procesarValidacionEntrada(codigoAEscanear);
 }
 
@@ -260,3 +318,4 @@ function exportarLogAforoPDF() {
     window.print();
   }, 300);
 }
+

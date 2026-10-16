@@ -7,7 +7,9 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   inicializarCalendario();
-  if (window.location.hash === '#login') abrirModalLogin();
+  if (window.location.hash === '#login') {
+    window.location.href = 'login.html';
+  }
 });
 
 let estadoCalendario = {
@@ -138,8 +140,8 @@ function renderizarEventos() {
         </div>
 
         <div class="tarjeta-footer">
-          <button onclick="abrirModalDetalle(${ev.id})" class="btn btn-secundario btn-sm">Ver Detalle</button>
-          <button onclick="abrirModalInscripcion(${ev.id})" class="btn btn-primario btn-sm" ${disponible <= 0 ? 'disabled' : ''}>
+          <button onclick="abrirModalDetalle('${ev.id}')" class="btn btn-secundario btn-sm">Ver Detalle</button>
+          <button onclick="abrirModalInscripcion('${ev.id}')" class="btn btn-primario btn-sm" ${disponible <= 0 ? 'disabled' : ''}>
             ${disponible <= 0 ? 'Agotado' : 'Inscribirse'}
           </button>
         </div>
@@ -214,7 +216,7 @@ function limpiarFiltros() {
  * Modal de Detalle de Evento
  */
 function abrirModalDetalle(eventoId) {
-  const evento = estadoCalendario.eventos.find(e => e.id === eventoId);
+  const evento = estadoCalendario.eventos.find(e => String(e.id) === String(eventoId));
   if (!evento) return;
 
   const modal = document.getElementById('modal-detalle-evento');
@@ -234,7 +236,7 @@ function abrirModalDetalle(eventoId) {
 
     <div style="display: flex; gap: 12px; justify-content: flex-end;">
       <button onclick="cerrarModal('modal-detalle-evento')" class="btn btn-secundario">Cerrar</button>
-      <button onclick="cerrarModal('modal-detalle-evento'); abrirModalInscripcion(${evento.id});" class="btn btn-primario" ${evento.aforoActual >= evento.aforoMaximo ? 'disabled' : ''}>
+      <button onclick="cerrarModal('modal-detalle-evento'); abrirModalInscripcion('${evento.id}');" class="btn btn-primario" ${evento.aforoActual >= evento.aforoMaximo ? 'disabled' : ''}>
         Proceder al Registro
       </button>
     </div>
@@ -247,7 +249,7 @@ function abrirModalDetalle(eventoId) {
  * Modal de Inscripción y Generación de Pase QR
  */
 function abrirModalInscripcion(eventoId) {
-  const evento = estadoCalendario.eventos.find(e => e.id === eventoId);
+  const evento = estadoCalendario.eventos.find(e => String(e.id) === String(eventoId));
   if (!evento) return;
 
   const modal = document.getElementById('modal-registro-evento');
@@ -259,6 +261,24 @@ function abrirModalInscripcion(eventoId) {
 
   if (tituloModal) tituloModal.textContent = `Registro: ${evento.titulo}`;
   document.getElementById('input-evento-id').value = evento.id;
+
+  // Selector dinámico de Jornada / Sub-evento si el evento cuenta con varias opciones
+  const grupoSubEvento = document.getElementById('grupo-selector-subevento');
+  const selectSubEvento = document.getElementById('select-subevento-inscripcion');
+  if (grupoSubEvento && selectSubEvento) {
+    if (evento.subEventos && evento.subEventos.length > 1) {
+      grupoSubEvento.style.display = 'flex';
+      selectSubEvento.innerHTML = evento.subEventos.map(s => `
+        <option value="${s.id}">${s.nombre} (${s.lugar || s.modalidad}) - Cupos: ${s.capacidad || 100}</option>
+      `).join('');
+    } else if (evento.subEventos && evento.subEventos.length === 1) {
+      grupoSubEvento.style.display = 'none';
+      selectSubEvento.innerHTML = `<option value="${evento.subEventos[0].id}">${evento.subEventos[0].nombre}</option>`;
+    } else {
+      grupoSubEvento.style.display = 'none';
+      selectSubEvento.innerHTML = '';
+    }
+  }
   
   const inputNombre = document.getElementById('reg-nombre');
   const inputDocumento = document.getElementById('reg-documento');
@@ -312,6 +332,7 @@ async function procesarInscripcion(event) {
   btnSubmit.textContent = 'Generando Pase...';
 
   const eventoId = document.getElementById('input-evento-id').value;
+  const subEventoId = document.getElementById('select-subevento-inscripcion')?.value || undefined;
   const nombre = document.getElementById('reg-nombre').value;
   const documento = document.getElementById('reg-documento').value;
   const correo = document.getElementById('reg-correo').value;
@@ -320,14 +341,14 @@ async function procesarInscripcion(event) {
   try {
     const respuesta = await peticionAPI('/inscripciones', {
       method: 'POST',
-      body: JSON.stringify({ eventoId, nombre, documento, correo, rol })
+      body: JSON.stringify({ eventoId, subEventoId, nombre, documento, correo, rol })
     });
 
     if (respuesta.ok && respuesta.ticket) {
       mostrarToast('Inscripción exitosa. Tu Pase Digital QR ha sido generado.', 'exito');
       renderizarPaseDigital(respuesta.ticket);
       // Actualizar aforo en estado local
-      const eventoLocal = estadoCalendario.eventos.find(e => e.id === Number(eventoId));
+      const eventoLocal = estadoCalendario.eventos.find(e => String(e.id) === String(eventoId));
       if (eventoLocal) {
         eventoLocal.aforoActual += 1;
         renderizarEventos();
@@ -357,10 +378,23 @@ function renderizarPaseDigital(ticket) {
   document.getElementById('ticket-doc').textContent = `Doc: ${ticket.asistenteDocumento}`;
   document.getElementById('ticket-codigo').textContent = ticket.ticketId;
 
-  // Generar QR Canvas Nativo de alta precisión
+  // Generar QR Canvas oficial con codificación estándar
   const canvas = document.getElementById('canvas-qr-generado');
   if (canvas) {
-    dibujarCodigoQR(canvas, ticket.ticketId);
+    if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+      window.QRCode.toCanvas(canvas, ticket.ticketId, {
+        width: 200,
+        margin: 1,
+        color: { dark: '#0b132b', light: '#ffffff' }
+      }, function (error) {
+        if (error) {
+          console.error('Error generando QR oficial:', error);
+          dibujarCodigoQR(canvas, ticket.ticketId);
+        }
+      });
+    } else {
+      dibujarCodigoQR(canvas, ticket.ticketId);
+    }
   }
 }
 
@@ -419,91 +453,56 @@ function dibujarCodigoQR(canvas, codigo) {
   ctx.fillRect(9 * cellSize, 9 * cellSize, 3 * cellSize, 3 * cellSize);
 }
 
+/**
+ * Descarga el pase digital QR como imagen PNG directamente al dispositivo móvil/PC
+ */
+function descargarPaseQRImagen() {
+  const canvas = document.getElementById('canvas-qr-generado');
+  if (!canvas) {
+    mostrarToast('No se encontró el pase digital generado.', 'error');
+    return;
+  }
+
+  try {
+    const enlace = document.createElement('a');
+    const codigoTexto = document.getElementById('ticket-codigo')?.textContent?.trim() || 'pase-digital';
+    enlace.download = `${codigoTexto}-sena.png`;
+    enlace.href = canvas.toDataURL('image/png');
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    mostrarToast('Pase digital guardado en tu galería / descargas.', 'exito');
+  } catch (err) {
+    mostrarToast('Error al exportar la imagen del pase.', 'error');
+  }
+}
+
 function cerrarModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.remove('activo');
 }
+
+// Cierre accesible de modales con tecla Escape y clic en backdrop
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    document.querySelectorAll('.modal-overlay.activo').forEach((m) => {
+      m.classList.remove('activo');
+    });
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('activo');
+  }
+});
 
 // ============================================================================
 // FUNCIONES DE CONTROL DEL MODAL DE LOGIN Y REGISTRO DE USUARIOS CON ROLES
 // ============================================================================
 
 function abrirModalLogin() {
-  const modal = document.getElementById('modal-login');
-  if (modal) {
-    cambiarTabLogin('login');
-    modal.classList.add('activo');
-  }
-}
-
-function cambiarTabLogin(tab) {
-  const btnLogin = document.getElementById('tab-btn-login');
-  const btnRegistro = document.getElementById('tab-btn-registro');
-  const secLogin = document.getElementById('form-login-seccion');
-  const secRegistro = document.getElementById('form-registro-seccion');
-
-  if (tab === 'login') {
-    if (btnLogin) btnLogin.classList.add('activo');
-    if (btnRegistro) btnRegistro.classList.remove('activo');
-    if (secLogin) secLogin.style.display = 'block';
-    if (secRegistro) secRegistro.style.display = 'none';
-  } else {
-    if (btnRegistro) btnRegistro.classList.add('activo');
-    if (btnLogin) btnLogin.classList.remove('activo');
-    if (secRegistro) secRegistro.style.display = 'block';
-    if (secLogin) secLogin.style.display = 'none';
-  }
-}
-
-async function ejecutarLogin(event) {
-  if (event) event.preventDefault();
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-
-  try {
-    const respuesta = await peticionAPI('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-
-    if (respuesta.ok && respuesta.datos) {
-      mostrarToast(`Bienvenido(a) ${respuesta.datos.usuario.nombre}. Rol: ${respuesta.datos.usuario.rol}`, 'exito');
-      cerrarModal('modal-login');
-      actualizarBarraUsuarioHeader();
-    }
-  } catch (err) {
-    mostrarToast(err.message || 'Error de inicio de sesión.', 'error');
-  }
-}
-
-function loginDemo(email, password) {
-  document.getElementById('login-email').value = email;
-  document.getElementById('login-password').value = password;
-  ejecutarLogin(null);
-}
-
-async function ejecutarRegistroUsuario(event) {
-  if (event) event.preventDefault();
-  const nombre = document.getElementById('nuevo-nombre').value;
-  const documento = document.getElementById('nuevo-documento').value;
-  const email = document.getElementById('nuevo-email').value;
-  const password = document.getElementById('nuevo-password').value;
-  const rol = document.getElementById('nuevo-rol').value;
-
-  try {
-    const respuesta = await peticionAPI('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ nombre, documento, email, password, rol })
-    });
-
-    if (respuesta.ok && respuesta.datos) {
-      mostrarToast(`Registro exitoso. Sesión iniciada como ${nombre} [${rol}].`, 'exito');
-      cerrarModal('modal-login');
-      actualizarBarraUsuarioHeader();
-    }
-  } catch (err) {
-    mostrarToast(err.message || 'Error al registrar el usuario.', 'error');
-  }
+  window.location.href = 'login.html';
 }
 
 // ============================================================================

@@ -195,15 +195,9 @@ function completarAccesoGoogle(usuario) {
   limpiarEstadoGoogle();
   mostrarToast(`Bienvenido(a) ${usuario.nombre}. Sesión iniciada con Google.`, 'exito');
 
-  if (window.location.pathname.endsWith('/login.html') || window.location.pathname.endsWith('login.html')) {
-    setTimeout(() => {
-      window.location.href = 'index.html';
-    }, 400);
-    return;
-  }
-
-  document.getElementById('modal-login')?.classList.remove('activo');
-  verificarAccesoSistema();
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 400);
 }
 
 function mostrarEstadoGoogle(mensaje, tipo) {

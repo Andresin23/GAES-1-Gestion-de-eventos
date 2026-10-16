@@ -5,7 +5,9 @@
  * Sistema de Gestión de Eventos del Fondo Emprender del SENA
  */
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = (typeof window !== 'undefined' && window.location.port !== '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+  ? 'http://localhost:3000/api/v1'
+  : '/api/v1';
 const SESION_MAX_INACTIVIDAD_MS = 30 * 60 * 1000;
 const ACTIVIDAD_MINIMA_ACTUALIZACION_MS = 60 * 1000;
 let ultimaActualizacionActividad = 0;
@@ -277,7 +279,9 @@ function verificarAccesoSistema() {
   const sesion = obtenerSesion();
 
   if (!sesion) {
-    if (!esLogin) {
+    // El calendario público (index.html) es accesible sin iniciar sesión
+    // Solo se protege la vista operativa de aforo en portería
+    if (esAforo) {
       window.location.replace('login.html');
     }
     return;
@@ -289,10 +293,11 @@ function verificarAccesoSistema() {
   }
 
   const rol = sesion.usuario.rol;
-  const esLogistico = rol === 'Operador de Logística' || rol === 'Logística';
-  const esEmprendedor = rol === 'Emprendedor SENA' || rol === 'Emprendedor';
-  const esComite = rol === 'Comité Evaluador' || rol === 'Comité';
-  const esVisor = rol === 'Visor Público' || rol === 'Visor Público / Asistente' || rol === 'Aprendiz / Público General';
+  const esLogistico = rol === 'Operador de Logística' || rol === 'Logística' || rol === 'OPERADOR';
+  const esAdmin = rol === 'Administrador' || rol === 'ADMIN';
+  const esEmprendedor = rol === 'Emprendedor SENA' || rol === 'Emprendedor' || rol === 'PROVEEDOR';
+  const esComite = rol === 'Comité Evaluador' || rol === 'Comité' || rol === 'COMITE';
+  const esVisor = rol === 'Visor Público' || rol === 'Visor Público / Asistente' || rol === 'Aprendiz / Público General' || rol === 'ASISTENTE' || rol === 'COMPRADOR';
 
   // 2. Logístico: SOLO puede estar en control-aforo.html
   if (esLogistico && !esAforo) {
@@ -322,11 +327,11 @@ function tienePermiso(accion) {
 
   switch (accion) {
     case 'CREAR_EVENTO':
-      return rol === 'Administrador' || rol === 'Emprendedor SENA' || rol === 'Emprendedor';
+      return rol === 'Administrador' || rol === 'ADMIN' || rol === 'Emprendedor SENA' || rol === 'Emprendedor' || rol === 'PROVEEDOR';
     case 'ESCANEAR_QR':
-      return rol === 'Operador de Logística' || rol === 'Administrador';
+      return rol === 'Operador de Logística' || rol === 'OPERADOR' || rol === 'Administrador' || rol === 'ADMIN';
     case 'EVALUAR_COMITE':
-      return rol === 'Comité Evaluador' || rol === 'Administrador';
+      return rol === 'Comité Evaluador' || rol === 'COMITE' || rol === 'Administrador' || rol === 'ADMIN';
     case 'INSCRIBIRSE':
       return true; // Todos los usuarios autenticados pueden inscribirse
     default:
@@ -335,22 +340,114 @@ function tienePermiso(accion) {
 }
 
 /**
+ * Normalizador ligero de entidades de eventos (GAES-1)
+ * Mapea de forma transparente los contratos del backend y Supabase hacia el frontend:
+ * - nombre ➔ titulo
+ * - categoriaSlug ➔ tipoCategoria
+ * - capacidad total ➔ aforoMaximo
+ * - asistencias ➔ aforoActual
+ */
+function normalizarEntidadEvento(ev) {
+  if (!ev || typeof ev !== 'object') return ev;
+
+  // 1. nombre ➔ titulo
+  if (!ev.titulo) {
+    ev.titulo = ev.nombre || ev.name || 'Evento Institucional';
+  }
+  if (!ev.nombre) {
+    ev.nombre = ev.titulo;
+  }
+
+  // 2. categoriaSlug ➔ tipoCategoria
+  if (!ev.tipoCategoria) {
+    ev.tipoCategoria = ev.categoriaSlug || (ev.category && ev.category.slug) || (ev.categoria ? String(ev.categoria).toLowerCase().replace(/\s+/g, '-') : 'general');
+  }
+  if (!ev.categoriaSlug) {
+    ev.categoriaSlug = ev.tipoCategoria;
+  }
+
+  // 3. capacidad total ➔ aforoMaximo
+  if (ev.aforoMaximo === undefined || ev.aforoMaximo === null) {
+    if (ev['capacidad total'] !== undefined) {
+      ev.aforoMaximo = Number(ev['capacidad total']);
+    } else if (ev.capacidadTotal !== undefined) {
+      ev.aforoMaximo = Number(ev.capacidadTotal);
+    } else if (ev.capacidad !== undefined) {
+      ev.aforoMaximo = Number(ev.capacidad);
+    } else if (ev.capacity !== undefined) {
+      ev.aforoMaximo = Number(ev.capacity);
+    } else if (Array.isArray(ev.subEventos) && ev.subEventos.length > 0) {
+      ev.aforoMaximo = ev.subEventos.reduce((total, s) => total + (Number(s.capacidad || s.capacity) || 0), 0);
+    } else {
+      ev.aforoMaximo = 100;
+    }
+  }
+
+  // 4. asistencias ➔ aforoActual
+  if (ev.aforoActual === undefined || ev.aforoActual === null) {
+    if (ev.asistencias !== undefined) {
+      ev.aforoActual = Number(ev.asistencias);
+    } else if (ev.asistentes !== undefined) {
+      ev.aforoActual = Number(ev.asistentes);
+    } else if (ev.inscritos !== undefined) {
+      ev.aforoActual = Number(ev.inscritos);
+    } else if (Array.isArray(ev.subEventos) && ev.subEventos.length > 0) {
+      ev.aforoActual = ev.subEventos.reduce((total, s) => total + (Number(s.inscritos || s.asistencias || s.asistentes) || 0), 0);
+    } else {
+      ev.aforoActual = 0;
+    }
+  }
+
+  return ev;
+}
+
+function normalizarRespuestaEventos(datos) {
+  if (!datos) return datos;
+
+  if (Array.isArray(datos)) {
+    return datos.map(normalizarEntidadEvento);
+  }
+
+  if (datos.eventos && Array.isArray(datos.eventos)) {
+    datos.eventos = datos.eventos.map(normalizarEntidadEvento);
+  }
+
+  if (datos.evento && typeof datos.evento === 'object') {
+    datos.evento = normalizarEntidadEvento(datos.evento);
+  }
+
+  if (datos.id && (datos.nombre || datos.name || datos.titulo)) {
+    datos = normalizarEntidadEvento(datos);
+  }
+
+  return datos;
+}
+
+/**
  * Petición genérica HTTP a la API REST con soporte de tokens JWT y fallback a LocalStorage
  */
 async function peticionAPI(ruta, opciones = {}) {
   const sesion = obtenerSesion();
-  const esRutaAutenticacion = ruta === '/auth/login' || ruta === '/auth/register';
 
-  if (!esRutaAutenticacion && !sesion) {
+  // Permitir libre acceso a las rutas públicas de eventos, autenticación e inscripciones sin requerir token
+  const esRutaPublica = 
+    ruta.startsWith('/eventos') || 
+    ruta.startsWith('/auth') || 
+    ruta.startsWith('/inscripciones') || 
+    ruta.startsWith('/aforo');
+
+  if (!esRutaPublica && !sesion) {
     window.location.replace('login.html');
     throw new Error('Debes iniciar sesión para continuar.');
   }
 
   const cabeceras = {
     'Content-Type': 'application/json',
+    ...(opciones.headers || {}),
     ...(opciones.cabeceras || {})
   };
 
+  // Solo inyectar Authorization Bearer si el usuario cuenta con una sesión activa
   if (sesion && sesion.token) {
     cabeceras.Authorization = `Bearer ${sesion.token}`;
   }
@@ -369,16 +466,47 @@ async function peticionAPI(ruta, opciones = {}) {
     }
 
     if (!respuesta.ok) {
-      const error = new Error(datos.mensaje || 'Ocurrió un error en el servidor.');
+      const error = new Error(datos.mensaje || `Error ${respuesta.status} en el servidor.`);
       error.status = respuesta.status;
       error.detalles = datos.errores || [];
+      error.datos = datos;
       throw error;
+    }
+
+    // Normalización de sesión cuando responde el backend oficial
+    if (ruta.startsWith('/auth/login') && datos.accessToken && datos.usuario) {
+      const sesionNormalizada = {
+        token: datos.accessToken,
+        refreshToken: datos.refreshToken,
+        expiraEn: Date.now() + (datos.expiresIn || 3600) * 1000,
+        usuario: {
+          id: datos.usuario.id,
+          nombre: datos.usuario.nombres || datos.usuario.nombre,
+          email: datos.usuario.correo || datos.usuario.email,
+          documento: datos.usuario.documento,
+          rol: datos.usuario.rolActivo || datos.usuario.rol || 'ASISTENTE',
+          roles: datos.usuario.roles
+        }
+      };
+      guardarSesion(sesionNormalizada);
+      datos.datos = sesionNormalizada;
+    }
+
+    // Normalizador ligero transparente para eventos (nombre ➔ titulo, categoriaSlug ➔ tipoCategoria, etc.)
+    if (ruta.startsWith('/eventos') || ruta.startsWith('/aforo')) {
+      datos = normalizarRespuestaEventos(datos);
     }
 
     return datos;
   } catch (error) {
+    // Si el servidor respondió con un error HTTP real (400, 401, 403, 404, etc.),
+    // propagamos el error para que la UI muestre la validación exacta del backend.
+    if (error.status) {
+      throw error;
+    }
     // Si el backend no responde (modo estático offline), usamos el motor de persistencia local
-    return manejarRespuestaFallback(ruta, opciones);
+    const respuestaFallback = manejarRespuestaFallback(ruta, opciones);
+    return normalizarRespuestaEventos(respuestaFallback);
   }
 }
 
@@ -646,7 +774,7 @@ function actualizarBarraUsuarioHeader() {
   // Gestión de visibilidad de links de navegación
   const linkCalendario = document.querySelector('.nav-link[href="index.html"]');
   const linkAforo = document.querySelector('.nav-link[href="control-aforo.html"]');
-  const linkAcceso = document.querySelector('a[href="index.html#login"]');
+  const linkAcceso = document.querySelector('.nav-link[href="login.html"], a[href="index.html#login"], a[href="login.html"]');
 
   if (sesion && sesion.usuario) {
     if (linkAcceso) linkAcceso.style.display = 'none';

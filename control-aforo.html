@@ -81,12 +81,14 @@
             <span class="badge badge-presencial">Cámara HD / Móvil</span>
           </header>
 
-          <!-- Viewport del Escáner con Láser de Animación -->
-          <figure class="scanner-viewport-wrapper" aria-label="Visor del escáner de cámara">
-            <div class="scanner-laser"></div>
-            <div class="scanner-target-frame"></div>
-            <figcaption style="text-align: center; color: #94A3B8; padding: 20px;">
-              <p style="font-size: 13px; font-weight: 600;">Apunta la cámara al pase digital del asistente</p>
+          <!-- Viewport del Escáner de Cámara Real -->
+          <figure class="scanner-viewport-wrapper" aria-label="Visor del escáner de cámara" style="overflow: hidden; min-height: 260px; position: relative; background: #0b132b; border-radius: var(--radio);">
+            <div id="lector-camara-qr" style="width: 100%;"></div>
+            <div id="scanner-laser-fallback" class="scanner-laser" style="display: none;"></div>
+            <div id="scanner-target-fallback" class="scanner-target-frame" style="display: none;"></div>
+            <figcaption id="scanner-msg-fallback" style="text-align: center; color: #94A3B8; padding: 24px;">
+              <p style="font-size: 13.5px; font-weight: 600; color: #E2E8F0; margin-bottom: 6px;">📷 Escaneo por Cámara en Vivo</p>
+              <p style="font-size: 12.5px; color: #94A3B8;">Haz clic en el botón inferior para activar la cámara del dispositivo o usa la búsqueda manual por documento a la derecha.</p>
             </figcaption>
           </figure>
 
@@ -97,11 +99,11 @@
 
           <!-- BOTONES DE ACCIÓN RÁPIDA -->
           <footer style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <button type="button" onclick="simularEscaneoQR()" class="btn btn-primario btn-bloque">
-              Simular Escaneo Instantáneo
+            <button type="button" id="btn-toggle-camara" onclick="toggleCamaraEscaneo()" class="btn btn-primario btn-bloque">
+              📷 Activar Cámara en Vivo
             </button>
-            <button type="button" onclick="simularEscaneoQR('FE-INVALIDO-000')" class="btn btn-secundario btn-sm">
-              Probar Pase Inválido
+            <button type="button" onclick="simularEscaneoQR()" class="btn btn-secundario btn-sm" style="flex: 1;">
+              Lectura de Prueba Rápida
             </button>
           </footer>
         </article>
@@ -168,8 +170,9 @@
   </div>
 
   <!-- SCRIPTS MODULARES JS -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/accessibility.js"></script>
   <script src="js/api.js?v=3.2"></script>
-  <script src="js/aforo.js"></script>
+  <script src="js/aforo.js?v=3.2"></script>
 </body>
 </html>

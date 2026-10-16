@@ -87,19 +87,22 @@ async function procesarRegistro(event) {
 }
 
 function ingresarComoVisor() {
-  // Registrar sesión en modo Visor Público (Invitado)
-  guardarSesion({
-    token: 'GUEST-TOKEN-VISOR',
-    usuario: {
-      id: 0,
-      nombre: 'Visor Público (Invitado)',
-      email: 'invitado@sena.edu.co',
-      documento: '0000000',
-      rol: 'Visor Público'
-    }
-  });
-  mostrarToast('Ingresando como Visor Público...', 'exito');
+  mostrarToast('Ingresando al Calendario Público...', 'exito');
   setTimeout(() => {
     window.location.href = 'index.html';
-  }, 400);
+  }, 200);
+}
+
+/**
+ * Alterna la visibilidad de los campos de contraseña (tipo password / text)
+ */
+function toggleVisibilidadPassword(inputId, boton) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const esPassword = input.type === 'password';
+  input.type = esPassword ? 'text' : 'password';
+  if (boton) {
+    boton.textContent = esPassword ? '🙈' : '👁️';
+    boton.setAttribute('aria-label', esPassword ? 'Ocultar contraseña' : 'Ver contraseña');
+  }
 }

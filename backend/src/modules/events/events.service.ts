@@ -63,34 +63,43 @@ export async function listarEventosPublicos(filtros: {
     orderBy: { date: 'asc' }
   });
 
-  return eventos.map((ev) => ({
-    id: ev.id,
-    nombre: ev.name,
-    descripcion: ev.description,
-    categoria: ev.category.name,
-    categoriaSlug: ev.category.slug,
-    modalidad: ev.modality,
-    fecha: ev.date.toISOString().slice(0, 10),
-    hora: ev.timeText,
-    lugar: ev.location,
-    estado: ev.status,
-    imagen: ev.coverImageUrl,
-    ruedaActiva: ev.businessRoundEnabled,
-    subEventos: ev.subEvents.map((s) => ({
-      id: s.id,
-      nombre: s.name,
-      descripcion: s.description,
-      fecha: s.date.toISOString().slice(0, 10),
-      horaInicio: s.startTime.toISOString().slice(11, 16),
-      horaFin: s.endTime.toISOString().slice(11, 16),
-      modalidad: s.modality,
-      lugar: s.location,
-      capacidad: s.capacity,
-      inscritos: s._count.registrations,
-      estadoInscripcion: estadoInscripcionSubEvento(s, s._count.registrations),
-      cerroInscripciones: s.registrationDeadline < now
-    }))
-  }));
+  return eventos.map((ev) => {
+    const aforoMaximo = ev.subEvents.reduce((acc, s) => acc + s.capacity, 0);
+    const aforoActual = ev.subEvents.reduce((acc, s) => acc + s._count.registrations, 0);
+
+    return {
+      id: ev.id,
+      nombre: ev.name,
+      titulo: ev.name,
+      descripcion: ev.description,
+      categoria: ev.category.name,
+      categoriaSlug: ev.category.slug,
+      tipoCategoria: ev.category.slug,
+      modalidad: ev.modality,
+      fecha: ev.date.toISOString().slice(0, 10),
+      hora: ev.timeText,
+      lugar: ev.location,
+      estado: ev.status,
+      imagen: ev.coverImageUrl,
+      aforoMaximo: aforoMaximo || 100,
+      aforoActual: aforoActual,
+      ruedaActiva: ev.businessRoundEnabled,
+      subEventos: ev.subEvents.map((s) => ({
+        id: s.id,
+        nombre: s.name,
+        descripcion: s.description,
+        fecha: s.date.toISOString().slice(0, 10),
+        horaInicio: s.startTime.toISOString().slice(11, 16),
+        horaFin: s.endTime.toISOString().slice(11, 16),
+        modalidad: s.modality,
+        lugar: s.location,
+        capacidad: s.capacity,
+        inscritos: s._count.registrations,
+        estadoInscripcion: estadoInscripcionSubEvento(s, s._count.registrations),
+        cerroInscripciones: s.registrationDeadline < now
+      }))
+    };
+  });
 }
 
 function estadoInscripcionSubEvento(s: SubEvent, inscritos: number): 'Abiertas' | 'Cerradas' | 'Próximamente' {
@@ -444,13 +453,15 @@ export async function cancelarEvento(
     include: { user: { select: { email: true } } }
   });
   for (const inscrito of inscritos) {
-    await encolarCorreo({
-      to: inscrito.user.email,
-      subject: 'Evento cancelado - Fondo Emprender SENA',
-      template: 'evento_cancelado',
-      payload: { evento: ev.name, motivo: datos.motivo },
-      createdById: admin.userId
-    });
+    if (inscrito.user?.email) {
+      await encolarCorreo({
+        to: inscrito.user.email,
+        subject: 'Evento cancelado - Fondo Emprender SENA',
+        template: 'evento_cancelado',
+        payload: { evento: ev.name, motivo: datos.motivo },
+        createdById: admin.userId
+      });
+    }
   }
 
   await invalidarCacheCalendario();

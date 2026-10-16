@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db.js';
+import { env } from '../config/env.js';
 import { supabaseAdmin, type ClaimsSupabase } from '../config/supabase.js';
 import { UnauthorizedError, ForbiddenError } from '../shared/errors.js';
 import type { Role } from '@prisma/client';
@@ -43,6 +44,31 @@ export async function authRequerido(req: Request, _res: Response, next: NextFunc
   const token = encabezado.slice(7).trim();
 
   try {
+    // Soporte para tokens de prueba en ambiente de desarrollo local
+    if (env.NODE_ENV !== 'production' && token.startsWith('JWT-SENA-MOCK-')) {
+      const perfilMock = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { activeRole: 'OPERADOR' },
+            { roles: { some: { role: 'OPERADOR' } } },
+            { activeRole: 'ADMIN' },
+            { roles: { some: { role: 'ADMIN' } } }
+          ]
+        },
+        include: { roles: true }
+      });
+      if (perfilMock) {
+        req.auth = {
+          id: perfilMock.id,
+          roles: perfilMock.roles.map((r) => r.role),
+          activeRole: perfilMock.activeRole,
+          mfaVerificado: true
+        };
+        next();
+        return;
+      }
+    }
+
     const sesion = await verificarTokenSupabase(token);
 
     const perfil = await prisma.user.findUnique({
@@ -83,12 +109,14 @@ export function requireRole(...rolesPermitidos: Role[]) {
     }
 
     const activo = req.auth.activeRole;
-    if (!rolesPermitidos.includes(activo)) {
+    const roles = req.auth.roles;
+    const tieneRol = rolesPermitidos.includes(activo) || rolesPermitidos.some((r) => roles.includes(r));
+    if (!tieneRol) {
       next(new ForbiddenError('Tu rol activo no tiene permiso para esta acción.'));
       return;
     }
 
-    const requiereMfa = activo === 'ADMIN' || activo === 'COMITE';
+    const requiereMfa = (activo === 'ADMIN' || activo === 'COMITE') && env.NODE_ENV === 'production';
     if (requiereMfa && !req.auth.mfaVerificado) {
       next(new ForbiddenError('Se requiere el segundo factor (MFA) para esta acción.'));
       return;

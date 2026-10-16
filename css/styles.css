@@ -585,15 +585,15 @@ a:hover {
 }
 
 .btn-primario {
-  background: var(--sena-verde);
+  background: linear-gradient(135deg, #008746 0%, #006837 100%);
   color: var(--texto-inverso);
-  box-shadow: 0 4px 12px rgba(0, 183, 99, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 104, 55, 0.35);
 }
 
 .btn-primario:hover:not(:disabled) {
-  background: var(--sena-verde-hover);
+  background: linear-gradient(135deg, #007A40 0%, #00542C 100%);
   color: var(--texto-inverso);
-  box-shadow: 0 6px 16px rgba(0, 183, 99, 0.4);
+  box-shadow: 0 6px 18px rgba(0, 104, 55, 0.45);
   text-decoration: none;
 }
 

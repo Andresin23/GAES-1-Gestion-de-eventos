@@ -382,3 +382,231 @@ export async function listarInscritosSubEvento(subEventoId: string) {
     esInvitado: r.isGuest
   }));
 }
+
+/**
+ * Valida un código QR o Documento en puerta para el módulo de control de aforo (RF-37).
+ * Actualiza checkedInAt = NOW() y checkedInById = operadorId en Supabase al escanear.
+ */
+export async function validarCheckInQR(
+  codigoQR: string | { codigoQR: string; operadorId?: string; eventoId?: string },
+  operadorId?: string
+) {
+  const qrString = typeof codigoQR === 'string' ? codigoQR : codigoQR.codigoQR;
+  const opId = typeof codigoQR === 'string' ? operadorId : (codigoQR.operadorId ?? operadorId);
+  const qrLimpio = (qrString || '').trim();
+
+  if (!qrLimpio) {
+    return {
+      valido: false,
+      mensaje: 'Código QR o documento no proporcionado.',
+      ticket: {
+        ticketId: '',
+        asistenteNombre: 'Desconocido',
+        asistenteDocumento: '',
+        eventoTitulo: 'Sin evento'
+      }
+    };
+  }
+
+  const registro = await prisma.registration.findFirst({
+    where: {
+      OR: [
+        { qrCode: qrLimpio },
+        { guestDocument: qrLimpio },
+        { user: { documentNumber: qrLimpio } },
+        { id: qrLimpio }
+      ]
+    },
+    include: {
+      user: true,
+      subEvent: {
+        include: {
+          event: true
+        }
+      }
+    }
+  });
+
+  if (!registro) {
+    return {
+      valido: false,
+      mensaje: `Código "${qrLimpio}" no encontrado en el sistema.`,
+      ticket: {
+        ticketId: qrLimpio,
+        asistenteNombre: 'Desconocido',
+        asistenteDocumento: qrLimpio,
+        eventoTitulo: 'No encontrado'
+      }
+    };
+  }
+
+  const nombreAsistente = registro.isGuest
+    ? (registro.guestName ?? 'Invitado Especial')
+    : `${registro.user?.firstName ?? ''} ${registro.user?.lastName ?? ''}`.trim();
+  const documentoAsistente = registro.isGuest
+    ? (registro.guestDocument ?? '')
+    : (registro.user?.documentNumber ?? '');
+
+  if (registro.checkedInAt) {
+    const horaIngreso = registro.checkedInAt.toLocaleTimeString('es-CO', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'America/Bogota'
+    });
+    return {
+      valido: false,
+      mensaje: `Acceso Ya Utilizado. Ingresó previamente a las ${horaIngreso}.`,
+      ticket: {
+        ticketId: registro.qrCode,
+        asistenteNombre: nombreAsistente,
+        asistenteDocumento: documentoAsistente,
+        eventoTitulo: registro.subEvent.event.name,
+        subEvento: registro.subEvent.name
+      }
+    };
+  }
+
+  if (registro.status === 'CANCELADO') {
+    return {
+      valido: false,
+      mensaje: 'La inscripción para este pase se encuentra CANCELADA.',
+      ticket: {
+        ticketId: registro.qrCode,
+        asistenteNombre: nombreAsistente,
+        asistenteDocumento: documentoAsistente,
+        eventoTitulo: registro.subEvent.event.name,
+        subEvento: registro.subEvent.name
+      }
+    };
+  }
+
+  const ahora = new Date();
+  await prisma.registration.update({
+    where: { id: registro.id },
+    data: {
+      checkedInAt: ahora,
+      checkedInById: opId ?? null,
+      status: 'ASISTIO'
+    }
+  });
+
+  if (opId) {
+    await registrarAuditoria({
+      userId: opId,
+      action: 'CHECKIN_QR',
+      entity: 'Registration',
+      entityId: registro.id,
+      detail: { qrCode: registro.qrCode, subEventId: registro.subEventId, documento: documentoAsistente },
+      ip: undefined
+    }).catch(() => {});
+  }
+
+  return {
+    valido: true,
+    mensaje: `¡Acceso Autorizado! Bienvenido(a) ${nombreAsistente}.`,
+    ticket: {
+      ticketId: registro.qrCode,
+      asistenteNombre: nombreAsistente,
+      asistenteDocumento: documentoAsistente,
+      eventoTitulo: registro.subEvent.event.name,
+      subEvento: registro.subEvent.name,
+      horaCheckIn: ahora.toISOString()
+    }
+  };
+}
+
+/**
+ * Procesa la inscripción pública a un evento desde el calendario web.
+ */
+export async function inscribirseEventoGeneral(datos: {
+  eventoId: string;
+  subEventoId?: string;
+  nombre: string;
+  documento: string;
+  correo: string;
+  rol?: string;
+}) {
+  let subEvento = datos.subEventoId
+    ? await prisma.subEvent.findUnique({ where: { id: datos.subEventoId }, include: { event: true } })
+    : await prisma.subEvent.findFirst({ where: { eventId: datos.eventoId }, include: { event: true }, orderBy: { date: 'asc' } });
+
+  if (!subEvento) {
+    throw new NotFoundError('No se encontró una jornada o sub-evento disponible para este evento.');
+  }
+
+  let usuario = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { documentNumber: datos.documento.trim() },
+        { email: datos.correo.trim().toLowerCase() }
+      ]
+    }
+  });
+
+  if (usuario) {
+    const yaInscrito = await prisma.registration.findUnique({
+      where: { userId_subEventId: { userId: usuario.id, subEventId: subEvento.id } }
+    });
+    if (yaInscrito && yaInscrito.status !== 'CANCELADO') {
+      const qrImage = await generarImagenQR(yaInscrito.qrCode);
+      return {
+        ok: true,
+        mensaje: 'Ya estabas registrado. Aquí tienes tu pase digital.',
+        ticket: {
+          ticketId: yaInscrito.qrCode,
+          asistenteNombre: `${usuario.firstName} ${usuario.lastName}`.trim(),
+          asistenteDocumento: usuario.documentNumber,
+          asistenteCorreo: usuario.email,
+          eventoTitulo: subEvento.event.name,
+          qrImage
+        }
+      };
+    }
+  }
+
+  let qrCode = generarCodigoQR();
+  let existe = await prisma.registration.findUnique({ where: { qrCode } });
+  while (existe) {
+    qrCode = generarCodigoQR();
+    existe = await prisma.registration.findUnique({ where: { qrCode } });
+  }
+
+  const qrImage = await generarImagenQR(qrCode);
+
+  if (usuario) {
+    await prisma.registration.create({
+      data: {
+        subEventId: subEvento.id,
+        userId: usuario.id,
+        isGuest: false,
+        qrCode,
+        status: 'INSCRITO'
+      }
+    });
+  } else {
+    await prisma.registration.create({
+      data: {
+        subEventId: subEvento.id,
+        isGuest: true,
+        guestName: datos.nombre.trim(),
+        guestDocument: datos.documento.trim(),
+        qrCode,
+        status: 'INSCRITO'
+      }
+    });
+  }
+
+  return {
+    ok: true,
+    mensaje: 'Inscripción confirmada. Se ha generado tu pase digital.',
+    ticket: {
+      ticketId: qrCode,
+      asistenteNombre: datos.nombre.trim(),
+      asistenteDocumento: datos.documento.trim(),
+      asistenteCorreo: datos.correo.trim(),
+      eventoTitulo: subEvento.event.name,
+      qrImage
+    }
+  };
+}

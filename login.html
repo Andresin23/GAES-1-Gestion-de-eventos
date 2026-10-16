@@ -15,13 +15,13 @@
     <!-- PANEL IZQUIERDO INSTITUCIONAL SEMÁNTICO -->
     <header class="login-banner">
       <div>
-        <div class="login-brand">
+        <a href="index.html" class="login-brand" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
           <div class="logo-sena-badge" aria-hidden="true">SENA</div>
           <div>
             <span style="font-size: 18px; font-weight: 800; letter-spacing: 0.8px; color: white; display: block;">FONDO EMPRENDER</span>
             <span style="font-size: 12px; color: #94A3B8; display: block;">Sistema de Gestión de Eventos & Aforo</span>
           </div>
-        </div>
+        </a>
 
         <div style="margin-top: 48px;">
           <h1 style="font-size: 24px; font-weight: 800; line-height: 1.35; margin-bottom: 16px;">
@@ -62,7 +62,12 @@
 
           <div class="campo-grupo" style="margin-bottom: 20px;">
             <label for="login-password" class="campo-label">Contraseña *</label>
-            <input type="password" id="login-password" class="entrada-control" required placeholder="••••••••">
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="login-password" class="entrada-control" required placeholder="••••••••" style="padding-right: 42px;">
+              <button type="button" class="btn-toggle-password" onclick="toggleVisibilidadPassword('login-password', this)" aria-label="Mostrar u ocultar contraseña" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--texto-secundario); font-size: 16px; padding: 4px; line-height: 1;">
+                👁️
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primario btn-bloque" style="padding: 11px; font-size: 14.5px;">
@@ -100,10 +105,10 @@
           </div>
         </aside>
 
-        <!-- BOTÓN ACCESO COMO VISOR PÚBLICO -->
-        <button type="button" onclick="ingresarComoVisor()" class="btn-visor">
-          Ingresar como Visor Público (Invitado)
-        </button>
+        <!-- ENLACE ACCESO COMO VISOR PÚBLICO -->
+        <a href="index.html" class="btn-visor" style="text-align: center; display: block; text-decoration: none; line-height: 2.2;">
+          Explorar Calendario Público como Invitado
+        </a>
       </section>
 
       <!-- FORMULARIO DE REGISTRO DE NUEVO USUARIO -->
@@ -126,7 +131,12 @@
 
           <div class="campo-grupo" style="margin-bottom: 12px;">
             <label for="reg-password" class="campo-label">Contraseña *</label>
-            <input type="password" id="reg-password" class="entrada-control" required placeholder="••••••••">
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="reg-password" class="entrada-control" required placeholder="••••••••" style="padding-right: 42px;">
+              <button type="button" class="btn-toggle-password" onclick="toggleVisibilidadPassword('reg-password', this)" aria-label="Mostrar u ocultar contraseña" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--texto-secundario); font-size: 16px; padding: 4px; line-height: 1;">
+                👁️
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primario btn-bloque" style="padding: 11px; font-size: 14.5px;">

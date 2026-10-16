@@ -5,7 +5,6 @@ import { validar } from '../../middlewares/validate.js';
 import { authRequerido, requireRole } from '../../middlewares/auth.js';
 import { BadRequestError } from '../../shared/errors.js';
 import * as servicio from './registrations.service.js';
-import { prisma } from '../../config/db.js';
 
 const esquemaId = z.object({ id: z.string().min(1) });
 
@@ -86,8 +85,49 @@ routerInscripciones.get('/mis-inscripciones', authRequerido, async (req: Request
   res.json({ ok: true, inscripciones: resultado });
 });
 
-async function ocupacionSub() {
-  const { prisma: p } = { prisma };
-  return p;
-}
-void ocupacionSub;
+/**
+ * Registro e inscripción pública a eventos desde el calendario web (GAES-1).
+ */
+routerInscripciones.post('/', async (req: Request, res: Response) => {
+  const { eventoId, subEventoId, nombre, documento, correo, rol } = req.body;
+  if (!eventoId || !nombre || !documento || !correo) {
+    throw new BadRequestError('Faltan campos obligatorios para la inscripción (evento, nombre, documento, correo).');
+  }
+
+  const resultado = await servicio.inscribirseEventoGeneral({
+    eventoId: String(eventoId),
+    subEventoId: subEventoId ? String(subEventoId) : undefined,
+    nombre: String(nombre),
+    documento: String(documento),
+    correo: String(correo),
+    rol: rol ? String(rol) : undefined
+  });
+
+  res.status(201).json(resultado);
+});
+
+/**
+ * Router específico para el módulo de control de aforo en puerta (GAES-1).
+ */
+export const routerAforo = Router();
+
+/**
+ * Endpoint de validación y control de aforo por lectura de QR en portería (RF-37).
+ * POST /api/v1/aforo/validar-qr
+ * Protegido para el rol OPERADOR o ADMIN.
+ * Actualiza checkedInAt = NOW() y checkedInById = operadorId en Supabase al escanear.
+ */
+const manejarValidacionQR = async (req: Request, res: Response) => {
+  const { codigoQR } = req.body;
+  if (!codigoQR || typeof codigoQR !== 'string') {
+    res.status(400).json({ valido: false, mensaje: 'Código QR o documento no proporcionado.' });
+    return;
+  }
+
+  const operadorId = req.auth?.id;
+  const resultado = await servicio.validarCheckInQR(codigoQR, operadorId);
+  res.json(resultado);
+};
+
+routerAforo.post('/validar-qr', authRequerido, requireRole('OPERADOR', 'ADMIN'), manejarValidacionQR);
+routerInscripciones.post('/validar-qr', authRequerido, requireRole('OPERADOR', 'ADMIN'), manejarValidacionQR);

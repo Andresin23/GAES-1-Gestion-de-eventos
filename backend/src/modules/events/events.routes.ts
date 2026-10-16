@@ -109,8 +109,21 @@ routerEventos.get('/categorias', async (_req: Request, res: Response) => {
   res.json({ ok: true, categorias: await servicio.obtenerCategorias() });
 });
 
-routerEventos.get('/', authRequerido, requireRole('ADMIN', 'COMITE'), validar(esquemaListar, 'query'), async (req: Request, res: Response) => {
-  const eventos = await servicio.listarEventos(req.query as never, true);
+routerEventos.get('/', validar(esquemaListar, 'query'), async (req: Request, res: Response, next) => {
+  if (req.headers.authorization?.startsWith('Bearer ')) {
+    return authRequerido(req, res, () => {
+      const activo = req.auth?.activeRole;
+      if (activo === 'ADMIN' || activo === 'COMITE') {
+        return servicio.listarEventos(req.query as never, true)
+          .then((eventos) => res.json({ ok: true, eventos }))
+          .catch(next);
+      }
+      return servicio.listarEventosPublicos(req.query as never)
+        .then((eventos) => res.json({ ok: true, eventos }))
+        .catch(next);
+    });
+  }
+  const eventos = await servicio.listarEventosPublicos(req.query as never);
   res.json({ ok: true, eventos });
 });
 
